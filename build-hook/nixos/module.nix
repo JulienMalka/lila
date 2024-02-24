@@ -1,4 +1,5 @@
-{ config, lib, pkgs, inputs, self, ... }:
+inputs: self:
+{ config, lib, pkgs, ... }:
 let 
   cfg = config.services.hash-collection;
   queued-build-hook = inputs.queued-build-hook.packages.${pkgs.system}.queued-build-hook;

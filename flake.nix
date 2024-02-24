@@ -48,7 +48,7 @@
         };
       })) // {
 
-        nixosModules.hash-collection = import ./build-hook/nixos/module.nix { inherit inputs self;};
+        nixosModules.hash-collection = import ./build-hook/nixos/module.nix inputs self;
       };
 
 

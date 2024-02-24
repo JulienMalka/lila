@@ -1,5 +1,8 @@
-{ config, lib, pkgs, queued-build-hook, build-hook, ... }:
-let cfg = config.services.hash-collection;
+{ config, lib, pkgs, inputs, self, ... }:
+let 
+  cfg = config.services.hash-collection;
+  queued-build-hook = inputs.queued-build-hook.packages.${pkgs.system}.queued-build-hook;
+  build-hook = self.packages.${pkgs.system}.build-hook;
 in with lib;
 {
   options.services.hash-collection = {

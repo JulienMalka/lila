@@ -83,7 +83,7 @@ in with lib;
           set -euo pipefail
           shopt -u nullglob
           # Load all credentials into env if they are in UPPER_SNAKE form.
-          export $HASH_COLLECTION_TOKEN=$(< "$CREDENTIALS_DIRECTORY/token")
+          export "$HASH_COLLECTION_TOKEN=$(< "$CREDENTIALS_DIRECTORY/token")"
           exec ${queued-build-hook}/bin/queued-build-hook daemon --hook ${build-hook} --retry-interval ${toString cfg.retryInterval} --retry-interval ${toString cfg.retries} --concurrency ${toString cfg.concurrency} 
         '';
         serviceConfig = {

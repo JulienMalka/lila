@@ -17,7 +17,7 @@
           build-hook = pkgs.callPackage ./build-hook {};
         };
 
-        checks.packages = packages;
+        checks.packages.build-hook = packages.build-hook;
 
         devShells.default = pkgs.mkShell {
           nativeBuildInputs = with pkgs; [ rustc cargo gcc pkg-config ];

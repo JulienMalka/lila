@@ -5,9 +5,10 @@
     nixpkgs.url = "github:nixos/nixpkgs";
     flake-utils.url = "github:numtide/flake-utils";
     flake-compat.url = "github:edolstra/flake-compat";
+    queued-build-hook.url = "github:nix-community/queued-build-hook";
   };
 
-  outputs = { self, nixpkgs, flake-utils, ... }:
+  outputs = { self, nixpkgs, flake-utils, queued-build-hook, ... }:
 
     (flake-utils.lib.eachSystem [ "x86_64-linux" "aarch64-linux" ] (system:
       let pkgs = nixpkgs.legacyPackages.${system}; in
@@ -16,6 +17,8 @@
           default = build-hook;
           build-hook = pkgs.callPackage ./build-hook {};
         };
+
+        nixosModules.hash-collection = import ./build-hook/nixos/module.nix;
 
         checks.packages.build-hook = packages.build-hook;
 

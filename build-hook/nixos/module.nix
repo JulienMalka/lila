@@ -79,18 +79,13 @@ in
           set -euo pipefail
           shopt -u nullglob
           # Load all credentials into env if they are in UPPER_SNAKE form.
-          if [[ -n "''${CREDENTIALS_DIRECTORY:-}" ]]; then
-            for file in "$CREDENTIALS_DIRECTORY"/*; do
-              key=$(basename "$file")
-              if [[ $key =~ ^[A-Z0-9_]+$ ]]; then
-                echo "Environ $key"
-                export "$key=$(< "$file")"
-              fi
-            done
-          fi
+          export $HASH_COLLECTION_TOKEN=$(< "$CREDENTIALS_DIRECTORY/token")"
           exec ${cfg.package}/bin/queued-build-hook daemon --hook ${build-hook} --retry-interval ${toString cfg.retryInterval} --retry-interval ${toString cfg.retries} --concurrency ${toString cfg.concurrency} 
         '';
         serviceConfig = {
+          Environment = [
+            "HASH_COLLECTION_SERVER=${cfg.collection-url}"
+          ];
           DynamicUser = true;
           User = "queued-build-hook";
           Group = "queued-build-hook";

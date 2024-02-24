@@ -11,12 +11,22 @@ Composed of 2 parts:
 
 ### Howto
 
+#### Server
+
 - Run the server with `uvicorn web:app --reload`
 - Create a user token by running `web.user_controller.create_user("username")` in a python shell
 
-TODO:
-- [ ] derivation/hash endpoint should answer the hashes of all reports in an aggregated way
-- [ ] provide post-build-hook
-- [ ] have token passed in post
+#### Client
+
+```nix
+  services.hash-collection = {
+    enable = true;
+    collection-url = "server url";
+    tokenFile = "/token/path";
+  };
+```
+
+
+### TODO:
 - [ ] method to ingest hydra's results
 - [ ] catch all sort of errors

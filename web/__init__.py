@@ -68,7 +68,7 @@ def get_derivations(db: Session = Depends(get_db)):
 
 
 @app.get("/derivation/{drv_hash}")
-def get_machines(drv_hash: str, db: Session = Depends(get_db)):
+def get_drvs(drv_hash: str, db: Session = Depends(get_db)):
     return get_drv_recap_or_404(db, drv_hash)
 
 

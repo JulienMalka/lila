@@ -18,7 +18,6 @@
           build-hook = pkgs.callPackage ./build-hook {};
         };
 
-        nixosModules.hash-collection = import ./build-hook/nixos/module.nix;
 
         checks.packages.build-hook = packages.build-hook;
 
@@ -47,7 +46,10 @@
           RUST_SRC_PATH = "${pkgs.rust.packages.stable.rustPlatform.rustLibSrc}";
 
         };
-      }));
+      })) // {
+
+        nixosModules.hash-collection = import ./build-hook/nixos/module.nix;
+      };
 
 
 }

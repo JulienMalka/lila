@@ -1,6 +1,6 @@
 { config, lib, pkgs, queued-build-hook, build-hook, ... }:
 let cfg = config.services.hash-collection;
-in
+in with lib;
 {
   options.services.hash-collection = {
 
@@ -99,6 +99,4 @@ in
       };
     };
 
-  };
-
-}
+  }

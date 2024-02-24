@@ -17,9 +17,9 @@ fn read_env_var_or_panic(variable: &str) -> String {
     }
 }
 
-fn parse_drv_hash<'a>(drv_path: &'a str) -> String {
+fn parse_drv_hash<'a>(drv_path: &'a str) -> &'a str {
     let re = Regex::new(r"\/nix\/store\/(.*)\.drv").unwrap();
-    re.captures(drv_path).unwrap()[0].into()
+    re.captures(drv_path).unwrap().get(1).unwrap().as_str()
 }
 
 #[tokio::main]

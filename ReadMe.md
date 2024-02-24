@@ -1,8 +1,6 @@
 Nix Hash Collection
 ===============================
 
-(WIP)
-
 Software to centralize build-output hashes from several builders.
 
 Composed of 2 parts:

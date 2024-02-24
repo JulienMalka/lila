@@ -43,12 +43,23 @@ def get_db():
         db.close()
 
 
-def get_drv_or_404(session, drv_hash):
-    o = session.query(models.Derivation).filter_by(drv_hash=drv_hash).one_or_none()
-    if o is None:
+def get_drv_recap_or_404(session, drv_hash):
+    drv = session.query(models.Derivation).filter_by(drv_hash=drv_hash).one_or_none()
+    if drv is None:
         raise HTTPException(status_code=404, detail="Not found")
 
-    return o
+    reports = session.query(models.Report).filter_by(drv_id=drv.id).all()
+    report_outputs = {}
+    for report in reports:
+        if report.output_name not in report_outputs.keys() or report.output_hash not in report_outputs[report.output_name].keys():
+            report_outputs[report.output_name] = {}
+            report_outputs[report.output_name][report.output_hash] = 1
+        else:
+            report_outputs[report.output_name][report.output_hash] += 1
+
+        
+
+    return report_outputs
 
 
 @app.get("/derivations/")
@@ -58,7 +69,7 @@ def get_derivations(db: Session = Depends(get_db)):
 
 @app.get("/derivation/{drv_hash}")
 def get_machines(drv_hash: str, db: Session = Depends(get_db)):
-    return get_drv_or_404(db, drv_hash)
+    return get_drv_recap_or_404(db, drv_hash)
 
 
 @app.post("/report/{drv_hash}")
@@ -71,7 +82,7 @@ def record_report(
     user = crud.get_user_with_token(db, token)
     crud.create_report(db, drv_hash, output_sha256_map, user)
     return {
-        "message": f"hello"
+        "Report accepted"
     }
 
 

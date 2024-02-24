@@ -68,4 +68,5 @@ class Report(Base):
     user_id: Mapped[int] = mapped_column(ForeignKey("users.id"))
     drv_id: Mapped[str] = mapped_column(ForeignKey("derivations.id"))
     derivation: Mapped["Derivation"] = relationship(back_populates="reports")
+    output_hash: Mapped[str] = mapped_column()
 

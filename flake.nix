@@ -11,11 +11,14 @@
 
     (flake-utils.lib.eachDefaultSystem (system:
       let pkgs = nixpkgs.legacyPackages.${system}; in
-      {
+      rec {
         packages = rec {
           default = build-hook;
           build-hook = pkgs.callPackage ./build-hook {};
         };
+
+        checks.packages = packages;
+
         devShells.default = pkgs.mkShell {
           nativeBuildInputs = with pkgs; [ rustc cargo gcc pkg-config ];
           buildInputs = [

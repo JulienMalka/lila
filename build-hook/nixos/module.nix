@@ -1,8 +1,8 @@
 { config, lib, pkgs, queued-build-hook, build-hook, ... }:
-let cfg = config.queued-build-hook;
+let cfg = config.services.hash-collection;
 in
 {
-  options.hash-collection = {
+  options.services.hash-collection = {
 
     enable = mkEnableOption "hash-collection";
 

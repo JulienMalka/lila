@@ -68,7 +68,7 @@ in with lib;
             SocketMode = "0660";
             SocketUser = "root";
             SocketGroup = "nixbld";
-            Service = "async-nix-post-build-hook.service";
+            Service = "nix-hash-collection-build-hook.service";
           };
         };
       };

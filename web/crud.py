@@ -7,9 +7,11 @@ from . import models, schemas
 
 
 def create_report(db: Session, drv_hash: str, output_hash_map: list[schemas.OuputHashPair], user_id):
-    derivation = models.Derivation(drv_hash=drv_hash)
-    db.add(derivation)
-    db.commit()
+    derivation = db.query(models.Derivation).filter_by(drv_hash=drv_hash).first()
+    if not derivation:
+        derivation = models.Derivation(drv_hash=drv_hash)
+        db.add(derivation)
+        db.commit()
     for item in output_hash_map:
         db.execute(
                 insert(models.Report)

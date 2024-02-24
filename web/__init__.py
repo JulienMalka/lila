@@ -1,4 +1,6 @@
+import typing as t
 from fastapi import Depends, FastAPI, HTTPException
+from fastapi.security.http import HTTPAuthorizationCredentials, HTTPBearer
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
 
@@ -20,6 +22,17 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+get_bearer_token = HTTPBearer(auto_error=False)
+
+async def get_token(
+    auth: t.Optional[HTTPAuthorizationCredentials] = Depends(get_bearer_token),
+) -> str:
+    if auth is not None:
+        return auth.credentials
+    else:
+        return ""
+
 
 
 def get_db():
@@ -51,8 +64,8 @@ def get_machines(drv_hash: str, db: Session = Depends(get_db)):
 @app.post("/report/{drv_hash}")
 def record_report(
     drv_hash: str,
-    token: str,
     output_sha256_map: list[schemas.OuputHashPair],
+    token: str = Depends(get_token),
     db: Session = Depends(get_db),
 ):
     user = crud.get_user_with_token(db, token)

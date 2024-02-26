@@ -65,7 +65,7 @@ with lib;
 
     };
 
-    systemd.services.async-nix-post-build-hook.serviceConfig.Environment."HASH_COLLECTION_SERVER" = cfg.collection-url;
+    systemd.services.async-nix-post-build-hook.serviceConfig.Environment = [ "HASH_COLLECTION_SERVER=${cfg.collection-url}" ];
 
   };
 

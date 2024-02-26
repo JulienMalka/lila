@@ -240,15 +240,16 @@
         "treefmt-nix": "treefmt-nix"
       },
       "locked": {
-        "lastModified": 1708564717,
-        "narHash": "sha256-lqLc+Z1oiS7URGUspPjkWd9CSkCAwFoguq4Os7+rmXY=",
-        "owner": "nix-community",
+        "lastModified": 1708940756,
+        "narHash": "sha256-5j+kcWLOXXQoEz6oIhpnIOG2xzAm8jHUJWAXPfXbThM=",
+        "owner": "JulienMalka",
         "repo": "queued-build-hook",
-        "rev": "214ca9b732aa0e909f00f374ffea4ac9abb07823",
+        "rev": "db65c1fb9adbaa6b9f34f1a67d5fd936b62fdbb7",
         "type": "github"
       },
       "original": {
-        "owner": "nix-community",
+        "owner": "JulienMalka",
+        "ref": "postbuildscript",
         "repo": "queued-build-hook",
         "type": "github"
       }

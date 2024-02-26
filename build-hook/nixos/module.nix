@@ -1,10 +1,9 @@
-inputs: self:
 { config, lib, pkgs, ... }:
-let 
+let
   cfg = config.services.hash-collection;
-  queued-build-hook = inputs.queued-build-hook.packages.${pkgs.system}.queued-build-hook;
-  build-hook = self.packages.${pkgs.system}.build-hook;
-in with lib;
+  build-hook = pkgs.callPackage ../. { };
+in
+with lib;
 {
   options.services.hash-collection = {
 
@@ -45,62 +44,25 @@ in with lib;
     tokenFile = mkOption {
       description = mdDoc ''
         Path to your identification token
-        '';
+      '';
       type = types.path;
+    };
   };
-};
 
-    config = mkIf cfg.enable {
+  config = mkIf cfg.enable {
 
-      nix.settings.post-build-hook =
-        let
-          enqueueScript = pkgs.writeShellScriptBin "enqueue-package" ''${queued-build-hook}/bin/queued-build-hook queue --socket "/var/lib/nix/async-nix-post-build-hook.sock"'';
-        in
-        "${enqueueScript}/bin/enqueue-package";
-
-
-      systemd.sockets = {
-        async-nix-post-build-hook = {
-          description = "Async nix post build hooks socket";
-          wantedBy = [ "sockets.target" ];
-          socketConfig = {
-            ListenStream = "/var/lib/nix/async-nix-post-build-hook.sock";
-            SocketMode = "0660";
-            SocketUser = "root";
-            SocketGroup = "nixbld";
-            Service = "nix-hash-collection-build-hook.service";
-          };
-        };
+    queued-build-hook = {
+      inherit (cfg) retries concurrency retryInterval;
+      enable = true;
+      postBuildScript = "${build-hook}/bin/build-hook";
+      credentials = {
+        HASH_COLLECTION_TOKEN = cfg.tokenFile;
       };
 
-      systemd.services.nix-hash-collection-build-hook = {
-        description = "Report build outputs";
-        wantedBy = [ "multi-user.target" ];
-        requires = [
-          "async-nix-post-build-hook.socket"
-        ];
-        script = ''
-          set -euo pipefail
-          shopt -u nullglob
-          # Load all credentials into env if they are in UPPER_SNAKE form.
-          export HASH_COLLECTION_TOKEN=$(< "$CREDENTIALS_DIRECTORY/token")
-          exec ${queued-build-hook}/bin/queued-build-hook daemon --hook ${build-hook}/bin/build-hook --retry-interval ${toString cfg.retryInterval} --retry-interval ${toString cfg.retries} --concurrency ${toString cfg.concurrency} 
-        '';
-        serviceConfig = {
-          Environment = [
-            "HASH_COLLECTION_SERVER=${cfg.collection-url}"
-          ];
-          DynamicUser = true;
-          User = "queued-build-hook";
-          Group = "queued-build-hook";
-          LoadCredential = [
-            "token:${toString cfg.tokenFile}"
-          ];
-          KillMode = "process";
-          Restart = "on-failure";
-          FileDescriptorStoreMax = 1;
-        };
-      };
     };
 
-  }
+    systemd.services.async-nix-post-build-hook.serviceConfig.Environment."HASH_COLLECTION_SERVER" = cfg.collection-url;
+
+  };
+
+}

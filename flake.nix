@@ -5,7 +5,7 @@
     nixpkgs.url = "github:nixos/nixpkgs";
     flake-utils.url = "github:numtide/flake-utils";
     flake-compat.url = "github:edolstra/flake-compat";
-    queued-build-hook.url = "github:nix-community/queued-build-hook";
+    queued-build-hook.url = "github:JulienMalka/queued-build-hook/postbuildscript";
   };
 
   outputs = inputs@{ self, nixpkgs, flake-utils, queued-build-hook, ... }:

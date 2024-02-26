@@ -1,3 +1,4 @@
+queued-build-hook-module:
 { config, lib, pkgs, ... }:
 let
   cfg = config.services.hash-collection;
@@ -5,6 +6,9 @@ let
 in
 with lib;
 {
+
+  imports = [ queued-build-hook-module ];
+
   options.services.hash-collection = {
 
     enable = mkEnableOption "hash-collection";

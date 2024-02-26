@@ -48,7 +48,7 @@
         };
       })) // {
 
-        nixosModules.hash-collection = import ./build-hook/nixos/module.nix inputs self;
+        nixosModules.hash-collection = import ./build-hook/nixos/module.nix queued-build-hook.nixosModules.queued-build-hook;
       };
 
 

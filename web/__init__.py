@@ -51,11 +51,11 @@ def get_drv_recap_or_404(session, drv_hash):
     reports = session.query(models.Report).filter_by(drv_id=drv.id).all()
     report_outputs = {}
     for report in reports:
-        if report.output_name not in report_outputs.keys() or report.output_hash not in report_outputs[report.output_name].keys():
-            report_outputs[report.output_name] = {}
-            report_outputs[report.output_name][report.output_hash] = 1
+        if report.output_path not in report_outputs.keys() or report.output_hash not in report_outputs[report.output_path].keys():
+            report_outputs[report.output_path] = {}
+            report_outputs[report.output_path][report.output_hash] = 1
         else:
-            report_outputs[report.output_name][report.output_hash] += 1
+            report_outputs[report.output_path][report.output_hash] += 1
 
         
 

@@ -6,7 +6,7 @@ use std::env;
 
 #[derive(Debug, Serialize, Deserialize)]
 struct OutputReport<'a> {
-    output_name: &'a str,
+    output_path: &'a str,
     output_hash: String,
 }
 
@@ -39,7 +39,7 @@ async fn main() -> Result<()> {
     let output_reports: Vec<_> = out_paths
         .split(" ")
         .map(|path| OutputReport {
-            output_name: path,
+            output_path: path,
             output_hash: hash_path("sha256", Base32, path).unwrap(),
         })
         .collect();

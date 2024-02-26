@@ -60,7 +60,7 @@ with lib;
       enable = true;
       postBuildScript = "${build-hook}/bin/build-hook";
       credentials = {
-        HASH_COLLECTION_TOKEN = cfg.tokenFile;
+        HASH_COLLECTION_TOKEN = toString cfg.tokenFile;
       };
 
     };

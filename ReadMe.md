@@ -13,6 +13,12 @@ This project is composed of two parts:
 
 ## Howto's
 
+### Keys
+
+Set up your keys with:
+
+- `nix key generate-secret --key-name username-hash-collection > secret.key`
+
 ### Server side
 
 #### Create a user
@@ -31,6 +37,7 @@ Run the server with `uvicorn web:app --reload`
     enable = true;
     collection-url = "server url";
     tokenFile = "/token/path";
+    secretKeyFile = "/secret/key/path";
   };
 ```
 

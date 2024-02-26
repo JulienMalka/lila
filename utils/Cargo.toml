@@ -7,7 +7,7 @@ edition = "2021"
 
 [dependencies]
 reqwest = { version = "0.11", features = ["json"] } 
-libnixstore = { git = "https://github.com/nix-community/harmonia.git" }
+libnixstore = { git = "https://github.com/JulienMalka/harmonia.git" }
 tokio = { version = "1", features = ["full"] }
 serde = { version = "1", features = ["derive"] }
 regex = "1"

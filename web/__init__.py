@@ -43,7 +43,7 @@ def get_db():
         db.close()
 
 
-def get_drv_recap_or_404(session, drv_hash, full):
+def get_drv_recap_or_404(session, drv_hash, full) -> schemas.DerivationReport:
     drv = session.query(models.Derivation).filter_by(drv_hash=drv_hash).one_or_none()
     if drv is None:
         raise HTTPException(status_code=404, detail="Not found")
@@ -63,7 +63,7 @@ def get_drv_recap_or_404(session, drv_hash, full):
     return report_outputs
 
 @app.get("/derivations/")
-def get_derivations(db: Session = Depends(get_db)):
+def get_derivations(db: Session = Depends(get_db)) -> schemas.DerivationList:
     return db.query(models.Derivation).all()
 
 @app.get("/derivations/{drv_hash}")
@@ -74,7 +74,7 @@ def get_drv(drv_hash: str,
     return get_drv_recap_or_404(db, drv_hash, full)
 
 @app.get("/derivations/{drv_hash}")
-def get_drv_recap(drv_hash: str, db: Session = Depends(get_db)):
+def get_drv_recap(drv_hash: str, db: Session = Depends(get_db)) -> schemas.DerivationReport:
     return get_drv_recap_or_404(db, drv_hash)
 
 @app.post("/report/{drv_hash}")

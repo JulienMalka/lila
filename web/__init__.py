@@ -48,7 +48,7 @@ def get_drv_recap_or_404(session, drv_hash):
     if drv is None:
         raise HTTPException(status_code=404, detail="Not found")
 
-    reports = session.query(models.Report).filter_by(drv_id=drv.id).all()
+    reports = drv.reports
     report_outputs = {}
     for report in reports:
         if report.output_path not in report_outputs.keys() or report.output_hash not in report_outputs[report.output_path].keys():
@@ -56,8 +56,6 @@ def get_drv_recap_or_404(session, drv_hash):
             report_outputs[report.output_path][report.output_hash] = 1
         else:
             report_outputs[report.output_path][report.output_hash] += 1
-
-        
 
     return report_outputs
 

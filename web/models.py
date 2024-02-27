@@ -46,8 +46,11 @@ class Token(Base):
     user_id: Mapped[int] = mapped_column(ForeignKey("users.id"))
     user: Mapped["User"] = relationship(back_populates="tokens")
 
-    def __init__(self, user):
-        self.value = ''.join(random.choices(string.ascii_uppercase + string.ascii_lowercase, k=30))
+    def __init__(self, user, value = ""):
+        if value == "":
+            self.value = ''.join(random.choices(string.ascii_uppercase + string.ascii_lowercase, k=30))
+        else:
+            self.value = value
         self.user = user
         self.user_id = user.id
         self.valid = True

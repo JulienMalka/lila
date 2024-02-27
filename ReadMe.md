@@ -12,7 +12,7 @@ Composed of 2 parts:
 #### Server
 
 - Run the server with `uvicorn web:app --reload`
-- Create a user token by running `web.user_controller.create_user("username")` in a python shell
+- Create a user token by running `./create_user "username"`
 
 #### Client
 

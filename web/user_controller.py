@@ -12,9 +12,9 @@ def get_db():
 
 db = SessionLocal()
 
-def create_user(name: str):
+def create_user(name: str, token: str = ""):
     user = models.User.create(db, name=name)
-    token = models.Token.create(db, user=user)
+    token = models.Token.create(db, user=user, value=token)
     print(f"Created user {name} with token {token.value}")
 
 

@@ -14,12 +14,12 @@
       let pkgs = nixpkgs.legacyPackages.${system}; in
       rec {
         packages = rec {
-          default = build-hook;
-          build-hook = pkgs.callPackage ./build-hook {};
+          utils = pkgs.callPackage ./utils {};
+          default = utils;
         };
 
 
-        checks.packages.build-hook = packages.build-hook;
+        checks.packages.utils = packages.utils;
 
         devShells.default = pkgs.mkShell {
           nativeBuildInputs = with pkgs; [ rustc cargo gcc pkg-config ];
@@ -48,7 +48,7 @@
         };
       })) // {
 
-        nixosModules.hash-collection = import ./build-hook/nixos/module.nix queued-build-hook.nixosModules.queued-build-hook;
+        nixosModules.hash-collection = import ./utils/nixos/module.nix queued-build-hook.nixosModules.queued-build-hook;
       };
 
 

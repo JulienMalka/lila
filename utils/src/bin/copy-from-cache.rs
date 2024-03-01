@@ -7,7 +7,7 @@ pub fn parse_store_path_hash(store_path: &str) -> &str {
     &store_path[11..43]
 }
 
-async fn fetch<'a>(out_path: &'a str) -> (String, OutputReport<'a>) {
+async fn fetch<'a>(out_path: &'a str) -> (String, OutputAttestation<'a>) {
     let hash = parse_store_path_hash(out_path);
     let response = reqwest::get(format!("https://cache.nixos.org/{0}.narinfo", hash))
         .await.expect("Fetching the narinfo")
@@ -21,7 +21,7 @@ async fn fetch<'a>(out_path: &'a str) -> (String, OutputReport<'a>) {
 
     (
         deriver,
-        OutputReport {
+        OutputAttestation {
             output_path: out_path,
             output_hash: nar_hash,
         }

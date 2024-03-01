@@ -21,14 +21,14 @@ async fn main() -> Result<()> {
         drv_ident, collection_server
     );
 
-    let output_reports: Vec<_> = out_paths
+    let output_attestations: Vec<_> = out_paths
         .split(" ")
-        .map(|path| OutputReport {
+        .map(|path| OutputAttestation {
             output_path: path,
             output_hash: hash_path("sha256", Base32, path).unwrap(),
         })
         .collect();
 
-    post(&collection_server, &token, &drv_ident, &output_reports).await?;
+    post(&collection_server, &token, &drv_ident, &output_attestations).await?;
     Ok(())
 }

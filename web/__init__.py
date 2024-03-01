@@ -43,24 +43,24 @@ def get_db():
         db.close()
 
 
-def get_drv_recap_or_404(session, drv_hash, full) -> schemas.DerivationReport:
+def get_drv_recap_or_404(session, drv_hash, full) -> schemas.DerivationAttestation:
     drv = session.query(models.Derivation).filter_by(drv_hash=drv_hash).one_or_none()
     if drv is None:
         raise HTTPException(status_code=404, detail="Not found")
 
-    reports = drv.reports
+    attestations = drv.attestations
     if (full):
-        return reports;
+        return attestations;
 
-    report_outputs = {}
-    for report in reports:
-        if report.output_path not in report_outputs.keys() or report.output_hash not in report_outputs[report.output_path].keys():
-            report_outputs[report.output_path] = {}
-            report_outputs[report.output_path][report.output_hash] = 1
+    attestation_outputs = {}
+    for attestation in attestations:
+        if attestation.output_path not in attestation_outputs.keys() or attestation.output_hash not in attestation_outputs[attestation.output_path].keys():
+            attestation_outputs[attestation.output_path] = {}
+            attestation_outputs[attestation.output_path][attestation.output_hash] = 1
         else:
-            report_outputs[report.output_path][report.output_hash] += 1
+            attestation_outputs[attestation.output_path][attestation.output_hash] += 1
 
-    return report_outputs
+    return attestation_outputs
 
 @app.get("/derivations/")
 def get_derivations(db: Session = Depends(get_db)) -> schemas.DerivationList:
@@ -74,20 +74,20 @@ def get_drv(drv_hash: str,
     return get_drv_recap_or_404(db, drv_hash, full)
 
 @app.get("/derivations/{drv_hash}")
-def get_drv_recap(drv_hash: str, db: Session = Depends(get_db)) -> schemas.DerivationReport:
+def get_drv_recap(drv_hash: str, db: Session = Depends(get_db)) -> schemas.DerivationAttestation:
     return get_drv_recap_or_404(db, drv_hash)
 
-@app.post("/report/{drv_hash}")
-def record_report(
+@app.post("/attestation/{drv_hash}")
+def record_attestation(
     drv_hash: str,
     output_sha256_map: list[schemas.OuputHashPair],
     token: str = Depends(get_token),
     db: Session = Depends(get_db),
 ):
     user = crud.get_user_with_token(db, token)
-    crud.create_report(db, drv_hash, output_sha256_map, user)
+    crud.create_attestation(db, drv_hash, output_sha256_map, user)
     return {
-        "Report accepted"
+        "Attestation accepted"
     }
 
 

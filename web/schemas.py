@@ -36,7 +36,7 @@ class DerivationList(RootModel):
 
 
 
-class DerivationReport(RootModel):
+class DerivationAttestation(RootModel):
     root: Dict[str, Dict[str, int]]
     model_config = {
         "json_schema_extra": {

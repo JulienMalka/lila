@@ -14,10 +14,17 @@ async fn fetch<'a>(out_path: &'a str) -> (String, OutputReport<'a>) {
         .text()
         .await.expect("Fetching the response body");
 
+    if response == "404" {
+        panic!("Metadata for [{0}] not found on cache.nixos.org", out_path);
+    }
     let deriver = Regex::new(r"(?m)Deriver: (.*).drv").unwrap()
-        .captures(&response).unwrap().get(1).unwrap().as_str().to_owned();
+        .captures(&response)
+        .expect(format!("Deriver not found in metadata for [{0}]", out_path).as_str())
+        .get(1).unwrap().as_str().to_owned();
     let nar_hash = Regex::new(r"(?m)NarHash: (.*)").unwrap()
-        .captures(&response).unwrap().get(1).unwrap().as_str().to_owned();
+        .captures(&response)
+        .expect(format!("NarHash not found in metadata for [{0}]", out_path).as_str())
+        .get(1).unwrap().as_str().to_owned();
 
     (
         deriver,

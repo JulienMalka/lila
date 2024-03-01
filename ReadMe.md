@@ -1,20 +1,30 @@
 Nix Hash Collection
 ===============================
 
-Software to centralize build-output hashes from several builders.
+## Introduction
 
-Composed of 2 parts:
-1) A post-build-hook
+This repository aims to give a set of tools that can be used to create a hash collection mechanism for Nix. 
+A hash collection infrastructure is used to collect and compare build outputs from different trusted builders.
+
+This project is composed of two parts: 
+
+1) A post-build-hook, that his a software running after each of Nix builds and in charge to report the hashes of the outputs
 2) A server to aggregate the results
 
-### Howto
+## Howto's
 
-#### Server
+### Server side
 
-- Run the server with `uvicorn web:app --reload`
-- Create a user token by running `./create_user "username"`
+#### Create a user
 
-#### Client
+Hashes reports are only allowed from trusted users, which are identified via a token.
+To generate a token run `./create_user "username"`
+
+#### Run the server 
+
+Run the server with `uvicorn web:app --reload`
+
+### Client side
 
 ```nix
   services.hash-collection = {
@@ -24,7 +34,3 @@ Composed of 2 parts:
   };
 ```
 
-
-### TODO:
-- [ ] method to ingest hydra's results
-- [ ] catch all sort of errors

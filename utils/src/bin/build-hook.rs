@@ -1,21 +1,7 @@
 use libnixstore::{hash_path, Radix::Base32};
+use nix_hash_collection_utils::*;
 use regex::Regex;
 use reqwest::Result;
-use serde::{Deserialize, Serialize};
-use std::env;
-
-#[derive(Debug, Serialize, Deserialize)]
-struct OutputReport<'a> {
-    output_path: &'a str,
-    output_hash: String,
-}
-
-fn read_env_var_or_panic(variable: &str) -> String {
-    match env::var(variable) {
-        Ok(v) => v,
-        Err(_) => panic!("The {} variable is not set", variable),
-    }
-}
 
 fn parse_drv_hash<'a>(drv_path: &'a str) -> &'a str {
     let re = Regex::new(r"\/nix\/store\/(.*)\.drv").unwrap();
@@ -35,7 +21,6 @@ async fn main() -> Result<()> {
         drv_ident, collection_server
     );
 
-    let client = reqwest::Client::new();
     let output_reports: Vec<_> = out_paths
         .split(" ")
         .map(|path| OutputReport {
@@ -44,11 +29,6 @@ async fn main() -> Result<()> {
         })
         .collect();
 
-    client
-        .post(format!("{0}/report/{1}", collection_server, drv_ident))
-        .bearer_auth(token)
-        .json(&output_reports)
-        .send()
-        .await?;
+    post(&collection_server, &token, &drv_ident, &output_reports).await?;
     Ok(())
 }

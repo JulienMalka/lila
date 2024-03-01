@@ -1,5 +1,5 @@
 [package]
-name = "build-hook"
+name = "nix-hash-collection-utils"
 version = "0.1.0"
 edition = "2021"
 

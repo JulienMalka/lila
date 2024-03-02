@@ -6,7 +6,7 @@ from sqlalchemy.sql.functions import user
 from . import models, schemas
 
 
-def create_attestation(db: Session, drv_hash: str, output_hash_map: list[schemas.OuputHashPair], user_id):
+def create_attestation(db: Session, drv_hash: str, output_hash_map: list[schemas.OutputHashPair], user_id):
     derivation = db.query(models.Derivation).filter_by(drv_hash=drv_hash).first()
     if not derivation:
         derivation = models.Derivation(drv_hash=drv_hash)

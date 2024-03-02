@@ -80,7 +80,7 @@ def get_drv_recap(drv_hash: str, db: Session = Depends(get_db)) -> schemas.Deriv
 @app.post("/attestation/{drv_hash}")
 def record_attestation(
     drv_hash: str,
-    output_sha256_map: list[schemas.OuputHashPair],
+    output_sha256_map: list[schemas.OutputHashPair],
     token: str = Depends(get_token),
     db: Session = Depends(get_db),
 ):

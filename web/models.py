@@ -74,3 +74,11 @@ class Attestation(Base):
     output_hash: Mapped[str] = mapped_column()
     output_sig: Mapped[str] = mapped_column()
 
+class Report(Base):
+    __tablename__ = "reports"
+    id: Mapped[int] = mapped_column(primary_key=True)
+    name: Mapped[str] = mapped_column()
+    # For now we store the definition in a CycloneDX JSON blob,
+    # later we might want to normalize it into its own database
+    # structure.
+    definition: Mapped[str] = mapped_column()

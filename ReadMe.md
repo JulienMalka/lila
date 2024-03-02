@@ -40,6 +40,55 @@ Run the server with `uvicorn web:app --reload`
   };
 ```
 
+### Reporting
+
+At the time of writing only reports on run-time closures are supported.
+Reporting is experimental and still expected to evolve, change, and
+grow support for build-time closures as well.
+
+#### Defining a report
+
+You define a report by uploading a JSON CycloneDX SBOM as produced by
+[nix-runtime-tree-to-sbom](https://codeberg.org/raboof/nix-runtime-tree-to-sbom):
+
+```
+$ nix-store -q --tree $(nix-build '<nixpkgs/nixos/release-combined.nix>' -A nixos.iso_gnome.x86_64-linux) > tree.txt
+$ cat tree.txt | ~/dev/nix-runtime-tree-to-sbom/tree-to-cyclonedx.py > sbom.cdx.json
+$ export HASH_COLLECTION_TOKEN=XYX # your token
+$ curl -X PUT --data @sbom.cdx.json "http://localhost:8000/reports/gnome-iso-runtime" -H "Content-Type: application/json" -H "Authorization: Bearer $HASH_COLLECTION_TOKEN"
+```
+
+#### Populating the report
+
+If you want to populate the report with hashes from different builders (e.g. from
+cache.nixos.org and from your own rebuilds), use separate tokens for the different
+sources.
+
+##### With hashes from cache.nixos.org
+
+```
+$ nix shell .#utils
+$ export HASH_COLLECTION_TOKEN=XYX # your token for the cache.nixos.org import
+$ ./fetch-from-cache.sh
+```
+
+This script is still very much WIP, and will enter an infinite loop retrying failed fetches.
+
+##### By rebuilding
+
+Make sure you have the post-build hook and diff hook configured as documented above.
+
+TODO you have to make sure all derivations are available for building on your system -
+is there a smart way to do that?
+
+```
+$ export HASH_COLLECTION_TOKEN=XYX # your token for the cache.nixos.org import
+$ ./rebuilder.sh
+```
+
+This script is still very much WIP, and will enter an infinite loop retrying failed fetches.
+You can run multiple rebuilders in parallel.
+
 ## Related projects
 
 * [nix-reproducible-builds-report](https://codeberg.org/raboof/nix-reproducible-builds-report/) aka `r13y`, which generates the reports at [https://reproducible.nixos.org](https://reproducible.nixos.org). Ideally the [reporting](https://github.com/JulienMalka/nix-hash-collection/issues/9) feature can eventually replace the reports there.

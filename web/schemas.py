@@ -58,5 +58,6 @@ class DerivationAttestation(RootModel):
         }
     }
 
-
+class ReportDefinition(RootModel):
+    root: dict
 

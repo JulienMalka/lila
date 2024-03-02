@@ -29,5 +29,7 @@ def create_attestation(db: Session, drv_hash: str, output_hash_map: list[schemas
 
 
 def get_user_with_token(db: Session, token_val: str):
-    token = db.query(models.Token).filter_by(value=token_val).one()
+    token = db.query(models.Token).filter_by(value=token_val).one_or_none()
+    if token is None:
+        return None
     return token.user_id

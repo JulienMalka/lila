@@ -85,6 +85,9 @@ def record_attestation(
     db: Session = Depends(get_db),
 ):
     user = crud.get_user_with_token(db, token)
+    if user == None:
+        raise HTTPException(status_code=401, detail="User not found")
+
     crud.create_attestation(db, drv_hash, output_sha256_map, user)
     return {
         "Attestation accepted"

@@ -2,7 +2,7 @@ from pydantic import BaseModel, RootModel
 from typing import Dict, List
 
 
-class OuputHashPair(BaseModel):
+class OutputHashPair(BaseModel):
     output_path: str
     output_hash: str
 

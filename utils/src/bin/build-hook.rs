@@ -25,7 +25,7 @@ async fn main() -> Result<()> {
         .split(" ")
         .map(|path| OutputAttestation {
             output_path: path,
-            output_hash: hash_path("sha256", Base32, path).unwrap(),
+            output_hash: format!("sha256:{0}", hash_path("sha256", Base32, path).unwrap()),
         })
         .collect();
 

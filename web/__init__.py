@@ -1,3 +1,4 @@
+from collections import defaultdict
 import typing as t
 from fastapi import Depends, FastAPI, HTTPException
 from fastapi.security.http import HTTPAuthorizationCredentials, HTTPBearer
@@ -52,10 +53,9 @@ def get_drv_recap_or_404(session, drv_hash, full) -> schemas.DerivationAttestati
     if (full):
         return attestations;
 
-    attestation_outputs = {}
+    attestation_outputs = defaultdict(dict)
     for attestation in attestations:
-        if attestation.output_path not in attestation_outputs.keys() or attestation.output_hash not in attestation_outputs[attestation.output_path].keys():
-            attestation_outputs[attestation.output_path] = {}
+        if attestation.output_hash not in attestation_outputs[attestation.output_path].keys():
             attestation_outputs[attestation.output_path][attestation.output_hash] = 1
         else:
             attestation_outputs[attestation.output_path][attestation.output_hash] += 1

@@ -6,6 +6,7 @@ use std::env;
 pub struct OutputAttestation<'a> {
     pub output_path: &'a str,
     pub output_hash: String,
+    pub output_sig: String,
 }
 
 pub fn read_env_var_or_panic(variable: &str) -> String {

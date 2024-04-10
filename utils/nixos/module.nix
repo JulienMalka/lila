@@ -51,6 +51,13 @@ with lib;
       '';
       type = types.path;
     };
+
+    secretKeyFile = mkOption {
+      description = mdDoc ''
+        Path to your secret key for signing builds
+      '';
+      type = types.path;
+    };
   };
 
   config = mkIf cfg.enable {
@@ -61,6 +68,7 @@ with lib;
       postBuildScript = "${build-hook}/bin/build-hook";
       credentials = {
         HASH_COLLECTION_TOKEN = toString cfg.tokenFile;
+        HASH_COLLECTION_SECRET_KEY = toString cfg.secretKeyFile;
       };
 
     };

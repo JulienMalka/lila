@@ -1,4 +1,4 @@
-use libnixstore::{hash_path, Radix::Base32};
+use libnixstore::{query_path_info, query_references, sign_string, Radix::Base32};
 use nix_hash_collection_utils::*;
 use regex::Regex;
 use reqwest::Result;
@@ -8,9 +8,17 @@ fn parse_drv_hash<'a>(drv_path: &'a str) -> &'a str {
     re.captures(drv_path).unwrap().get(1).unwrap().as_str()
 }
 
+fn fingerprint(out_path: &str, nar_hash: &str, size: u64) -> String {
+    let references = query_references(out_path).expect("Query references").join(",");
+    let fingerprint = format!("1;{out_path};{nar_hash};{size};{references}").to_string();
+    return fingerprint;
+}
+
 #[tokio::main]
 async fn main() -> Result<()> {
+    libnixstore::init();
     let token = read_env_var_or_panic("HASH_COLLECTION_TOKEN");
+    let secret_key = read_env_var_or_panic("HASH_COLLECTION_SECRET_KEY");
     let collection_server = read_env_var_or_panic("HASH_COLLECTION_SERVER");
     let out_paths = read_env_var_or_panic("OUT_PATHS");
     let drv_path = read_env_var_or_panic("DRV_PATH");
@@ -23,9 +31,17 @@ async fn main() -> Result<()> {
 
     let output_attestations: Vec<_> = out_paths
         .split(" ")
-        .map(|path| OutputAttestation {
-            output_path: path,
-            output_hash: format!("sha256:{0}", hash_path("sha256", Base32, path).unwrap()),
+        .map(|path| -> OutputAttestation {
+            let info = query_path_info(path, Base32).unwrap();
+            let hash = info.narhash;
+            let size = info.size;
+            let fingerprint = fingerprint(path, &hash, size);
+            let signature = sign_string(secret_key.as_str(), &fingerprint).expect("Failed to sign fingerprint");
+            return OutputAttestation {
+                output_path: path,
+                output_hash: hash,
+                output_sig: signature
+            }
         })
         .collect();
 

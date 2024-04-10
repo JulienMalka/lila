@@ -25,12 +25,17 @@ async fn fetch<'a>(out_path: &'a str) -> (String, OutputAttestation<'a>) {
         .captures(&response)
         .expect(format!("NarHash not found in metadata for [{0}]", out_path).as_str())
         .get(1).unwrap().as_str().to_owned();
+    let sig = Regex::new(r"(?m)Sig: (.*)").unwrap()
+        .captures(&response)
+        .expect(format!("Sig not found in metadata for [{0}]", out_path).as_str())
+        .get(1).unwrap().as_str().to_owned();
 
     (
         deriver,
         OutputAttestation {
             output_path: out_path,
             output_hash: nar_hash,
+            output_sig: sig,
         }
     )
 }

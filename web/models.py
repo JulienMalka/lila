@@ -72,4 +72,5 @@ class Attestation(Base):
     drv_id: Mapped[str] = mapped_column(ForeignKey("derivations.id"))
     derivation: Mapped["Derivation"] = relationship(back_populates="attestations")
     output_hash: Mapped[str] = mapped_column()
+    output_sig: Mapped[str] = mapped_column()
 

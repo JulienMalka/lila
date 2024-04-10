@@ -21,6 +21,7 @@ def create_attestation(db: Session, drv_hash: str, output_hash_map: list[schemas
                         "user_id": user_id,
                         "drv_id": derivation.id,
                         "output_hash": item.output_hash,
+                        "output_sig": item.output_sig,
                         }
         ))
         db.commit()

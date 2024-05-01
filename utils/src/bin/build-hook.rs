@@ -1,18 +1,6 @@
-use libnixstore::{query_path_info, query_references, sign_string, Radix::Base32};
+use libnixstore::{query_path_info, sign_string, Radix::Base32};
 use nix_hash_collection_utils::*;
-use regex::Regex;
 use reqwest::Result;
-
-fn parse_drv_hash<'a>(drv_path: &'a str) -> &'a str {
-    let re = Regex::new(r"\/nix\/store\/(.*)\.drv").unwrap();
-    re.captures(drv_path).unwrap().get(1).unwrap().as_str()
-}
-
-fn fingerprint(out_path: &str, nar_hash: &str, size: u64) -> String {
-    let references = query_references(out_path).expect("Query references").join(",");
-    let fingerprint = format!("1;{out_path};{nar_hash};{size};{references}").to_string();
-    return fingerprint;
-}
 
 #[tokio::main]
 async fn main() -> Result<()> {

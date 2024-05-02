@@ -1,11 +1,12 @@
 from collections import defaultdict
+from sys import argv
 import typing as t
 from fastapi import Depends, FastAPI, HTTPException
 from fastapi.security.http import HTTPAuthorizationCredentials, HTTPBearer
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
 
-from . import models, schemas, crud
+from . import models, schemas, crud, user_controller
 from .db import SessionLocal, engine
 
 models.Base.metadata.create_all(bind=engine)
@@ -42,6 +43,14 @@ def get_db():
         yield db
     finally:
         db.close()
+
+
+def create_user(username, token=None):
+    if token is not None:
+        user_controller.create_user(username, token)
+    else:
+        user_controller.create_user(username)
+
 
 
 def get_drv_recap_or_404(session, drv_hash, full) -> schemas.DerivationAttestation:

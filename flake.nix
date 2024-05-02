@@ -67,5 +67,6 @@
     // {
 
       nixosModules.hash-collection = import ./utils/nixos/module.nix queued-build-hook.nixosModules.queued-build-hook;
+      nixosModules.hash-collection-server = import ./web/nixos/module.nix;
     };
 }

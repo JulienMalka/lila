@@ -1,6 +1,5 @@
-Nix Hash Collection
+lila
 ===============================
-
 ## Introduction
 
 This repository aims to give a set of tools that can be used to create a hash collection mechanism for Nix. 

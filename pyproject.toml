@@ -1,0 +1,33 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "lila"
+version = "0.1.0"
+authors = [
+  { name="Julien Malka", email="julien@malka.sh" },
+]
+description = "Track your Nix closures over time"
+readme = "ReadMe.md"
+requires-python = ">=3.11"
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: European Union Public Licence 1.2 (EUPL 1.2)",
+    "Framework :: FastAPI",
+]
+dependencies = [
+  "sqlalchemy>=2.0.21",
+  "pydantic>=1.10.12",
+  "fastapi>=0.103.1",
+]
+
+[project.urls]
+Homepage = "https://github.com/JulienMalka/lila"
+Issues = "https://github.com/JulienMalka/lila/issues"
+
+[tool.hatch.build.targets.wheel]
+only-include = [ "web" ]
+
+[tool.hatch.build.targets.wheel.sources]
+"web" = "lila"

@@ -83,7 +83,7 @@ in
       example = literalExpression ''
         {
           serverAliases = [
-            "arkheon.''${config.networking.domain}"
+            "lila.''${config.networking.domain}"
           ];
           # To enable encryption and let let's encrypt take care of certificate
           forceSSL = true;
@@ -92,7 +92,7 @@ in
       '';
       description = ''
         With this option, you can customize an nginx virtual host which already
-        has sensible defaults for Arkheon. If enabled, then by default, the
+        has sensible defaults for lila. If enabled, then by default, the
         serverName is ''${domain}, If this is set to null, no nginx virtualHost
         will be configured.
       '';

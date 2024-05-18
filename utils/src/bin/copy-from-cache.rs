@@ -17,6 +17,11 @@ async fn fetch<'a>(out_path: &'a str) -> (String, OutputAttestation<'a>) {
     if response == "404" {
         panic!("Metadata for [{0}] not found on cache.nixos.org", out_path);
     }
+
+    // TODO Deriver is not populated for static inputs, and may be super useful:
+    // the same output may have multiple derivers even for non-FOD derivations.
+    // Should we make it optional in the data model / API as well?
+    // https://github.com/JulienMalka/nix-hash-collection/issues/25
     let deriver = Regex::new(r"(?m)Deriver: (.*).drv").unwrap()
         .captures(&response)
         .expect(format!("Deriver not found in metadata for [{0}]", out_path).as_str())

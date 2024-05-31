@@ -1,0 +1,53 @@
+<html>
+<head>
+  <meta charset="utf-8"/>
+  <!-- todo ship -->
+  <script src="https://cdn.jsdelivr.net/npm/echarts@5.5.0/dist/echarts.min.js"></script>
+  <!-- todo ship or replace -->
+  <script src=" https://cdn.jsdelivr.net/npm/jquery@3.7.1/dist/jquery.min.js "></script>
+</head>
+<body>
+  <div id="main" style="width: 1000; height: 1000"></div>
+  <script>
+var option;
+const myChart = echarts.init(document.getElementById('main'))
+myChart.showLoading();
+myChart.showLoading();
+$.get(document.location.pathname + '/graph-data.json', function (webkitDep) {
+  console.log('loaded', webkitDep);
+  myChart.hideLoading();
+  option = {
+    color: webkitDep.color,
+    legend: {
+      data: webkitDep.legend
+    },
+    series: [
+      {
+        type: 'graph',
+        layout: 'force',
+        animation: false,
+        label: {
+          position: 'right',
+          formatter: '{b}'
+        },
+        draggable: true,
+        data: webkitDep.nodes.map(function (node, idx) {
+          node.id = idx;
+          node.value = 1;
+          return node;
+        }),
+        categories: webkitDep.categories,
+        force: {
+          edgeLength: 5,
+          repulsion: 20,
+          gravity: 0.2
+        },
+        edges: webkitDep.links
+      }
+    ]
+  };
+  myChart.setOption(option);
+});
+  </script>
+</body>
+</html>

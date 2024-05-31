@@ -5,6 +5,7 @@ import typing as t
 from fastapi import Depends, FastAPI, Header, HTTPException, Response
 from fastapi.security.http import HTTPAuthorizationCredentials, HTTPBearer
 from fastapi.middleware.cors import CORSMiddleware
+from starlette.responses import FileResponse
 from sqlalchemy.orm import Session
 
 from . import models, schemas, crud, user_controller
@@ -161,125 +162,6 @@ def printtree(root, deps, results, cur_indent=0, seen=None):
               #result = result + "\n    " + d
   return result
 
-def htmltree(root, deps, results):
-  def icon(result):
-      if result == "No builds":
-          return "❔ "
-      elif result == "One build":
-          return "❎ "
-      elif result == "Partially reproduced":
-          return "❕ "
-      elif result == "Successfully reproduced":
-          return "✅ "
-      elif result == "Consistently nondeterministic":
-          return "❌ "
-      else:
-          return ""
-  def generatetree(root, seen):
-    if root in seen:
-      return f'<summary title="{root}">...</summary>'
-    seen[root] = True;
-
-    result = f'<summary title="{root}">'
-    if root in results:
-      result = result + f'<span title="{results[root]}">' + icon(results[root]) + "</span>" + root[44:] + " "
-    else:
-      result = result + root[44:]
-    result = result + "</summary>\n"
-    result = result + "<ul>"
-    for dep in deps:
-        if dep['ref'] == root and 'dependsOn' in dep:
-            for d in dep['dependsOn']:
-                result += f'<li><details class="{d}" open>'
-                result += generatetree(d, seen)
-                result += "</details></li>"
-    result = result + "</ul>"
-    return result
-  tree = generatetree(root, {})
-  return '''
-  <html>
-  <head>
-    <style>
-      .tree{
-        --spacing : 1.5rem;
-        --radius  : 8px;
-      }
-
-      .tree li{
-        display      : block;
-        position     : relative;
-        padding-left : calc(2 * var(--spacing) - var(--radius) - 2px);
-      }
-      
-      .tree ul{
-        margin-left  : calc(var(--radius) - var(--spacing));
-        padding-left : 0;
-      }
-      
-      .tree ul li{
-        border-left : 2px solid #ddd;
-      }
-      
-      .tree ul li:last-child{
-        border-color : transparent;
-      }
-      
-      .tree ul li::before{
-        content      : '';
-        display      : block;
-        position     : absolute;
-        top          : calc(var(--spacing) / -2);
-        left         : -2px;
-        width        : calc(var(--spacing) + 2px);
-        height       : calc(var(--spacing) + 1px);
-        border       : solid #ddd;
-        border-width : 0 0 2px 2px;
-      }
-      
-      .tree summary{
-        display : block;
-        cursor  : pointer;
-      }
-      
-      .tree summary::marker,
-      .tree summary::-webkit-details-marker{
-        display : none;
-      }
-      
-      .tree summary:focus{
-        outline : none;
-      }
-      
-      .tree summary:focus-visible{
-        outline : 1px dotted #000;
-      }
-      
-      .tree li::after,
-      .tree summary::before{
-        content       : '';
-        display       : block;
-        position      : absolute;
-        top           : calc(var(--spacing) / 2 - var(--radius));
-        left          : calc(var(--spacing) - var(--radius) - 1px);
-        width         : calc(2 * var(--radius));
-        height        : calc(2 * var(--radius));
-        border-radius : 50%;
-        background    : #ddd;
-      }
-      
-    </style>
-  </head>
-  ''' + f'''
-  <body>
-    <ul class="tree">
-    <li>
-    {tree}
-    </li>
-    </ul>
-  </body>
-  </html>
-'''
-
 @app.get("/reports/{name}")
 def report(
     name: str,
@@ -296,63 +178,7 @@ def report(
             media_type='application/vnd.cyclonedx+json')
 
     if 'text/html' in accept:
-        return Response(
-            content='''
-<html>
-<head>
-  <meta charset="utf-8"/>
-  <!-- todo ship -->
-  <script src="https://cdn.jsdelivr.net/npm/echarts@5.5.0/dist/echarts.min.js"></script>
-  <!-- todo ship or replace -->
-  <script src=" https://cdn.jsdelivr.net/npm/jquery@3.7.1/dist/jquery.min.js "></script>
-</head>
-<body>
-  <div id="main" style="width: 1000; height: 1000"></div>
-  <script>
-var option;
-const myChart = echarts.init(document.getElementById('main'))
-myChart.showLoading();
-myChart.showLoading();
-$.get(document.location.pathname + '/graph-data.json', function (webkitDep) {
-  console.log('loaded', webkitDep);
-  myChart.hideLoading();
-  option = {
-    color: webkitDep.color,
-    legend: {
-      data: webkitDep.legend
-    },
-    series: [
-      {
-        type: 'graph',
-        layout: 'force',
-        animation: false,
-        label: {
-          position: 'right',
-          formatter: '{b}'
-        },
-        draggable: true,
-        data: webkitDep.nodes.map(function (node, idx) {
-          node.id = idx;
-          node.value = 1;
-          return node;
-        }),
-        categories: webkitDep.categories,
-        force: {
-          edgeLength: 5,
-          repulsion: 20,
-          gravity: 0.2
-        },
-        edges: webkitDep.links
-      }
-    ]
-  };
-  myChart.setOption(option);
-});
-  </script>
-</body>
-</html>
-            ''',
-            media_type='text/html')
+        return FileResponse('web/static/report.html')
     else:
         paths = report_out_paths(report)
         root = report['metadata']['component']['bom-ref']

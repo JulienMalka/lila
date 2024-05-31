@@ -126,6 +126,8 @@ def attestations_by_out(output_path: str, db: Session = Depends(get_db)):
 
 def report_out_paths(report):
     paths = []
+    root = report['metadata']['component']['bom-ref']
+    paths.append(root)
     for component in report['components']:
         for prop in component['properties']:
             if prop['name'] == "nix:out_path":
@@ -293,19 +295,126 @@ def report(
             content=json.dumps(report),
             media_type='application/vnd.cyclonedx+json')
 
-    paths = report_out_paths(report)
-
-    root = report['metadata']['component']['bom-ref']
-    results = crud.path_summaries(db, paths)
-
     if 'text/html' in accept:
         return Response(
-            content=htmltree(root, report['dependencies'], results),
+            content='''
+<html>
+<head>
+  <meta charset="utf-8"/>
+  <!-- todo ship -->
+  <script src="https://cdn.jsdelivr.net/npm/echarts@5.5.0/dist/echarts.min.js"></script>
+  <!-- todo ship or replace -->
+  <script src=" https://cdn.jsdelivr.net/npm/jquery@3.7.1/dist/jquery.min.js "></script>
+</head>
+<body>
+  <div id="main" style="width: 1000; height: 1000"></div>
+  <script>
+var option;
+const myChart = echarts.init(document.getElementById('main'))
+myChart.showLoading();
+myChart.showLoading();
+$.get(document.location.pathname + '/graph-data.json', function (webkitDep) {
+  console.log('loaded', webkitDep);
+  myChart.hideLoading();
+  option = {
+    color: webkitDep.color,
+    legend: {
+      data: webkitDep.legend
+    },
+    series: [
+      {
+        type: 'graph',
+        layout: 'force',
+        animation: false,
+        label: {
+          position: 'right',
+          formatter: '{b}'
+        },
+        draggable: true,
+        data: webkitDep.nodes.map(function (node, idx) {
+          node.id = idx;
+          node.value = 1;
+          return node;
+        }),
+        categories: webkitDep.categories,
+        force: {
+          edgeLength: 5,
+          repulsion: 20,
+          gravity: 0.2
+        },
+        edges: webkitDep.links
+      }
+    ]
+  };
+  myChart.setOption(option);
+});
+  </script>
+</body>
+</html>
+            ''',
             media_type='text/html')
     else:
+        paths = report_out_paths(report)
+        root = report['metadata']['component']['bom-ref']
+        results = crud.path_summaries(db, paths)
         return Response(
             content=printtree(root, report['dependencies'], results),
             media_type='text/plain')
+
+@app.get("/reports/{name}/graph-data.json")
+def graph_data(
+    name: str,
+    db: Session = Depends(get_db),
+):
+    report = crud.report(db, name)
+    if report == None:
+        raise HTTPException(status_code=404, detail="Report not found")
+
+    legend = [
+        "No builds",
+        "One build",
+        "Partially reproduced",
+        "Successfully reproduced",
+        "Consistently nondeterministic",
+    ];
+    color = [
+        "#eeeeee",
+        "#aaaaaa",
+        "#eeaaaa",
+        "#00ee00",
+        "#ee0000",
+    ];
+    categories = []
+    for category in legend:
+        categories.append({
+            "name": category,
+            "base": category,
+            "keyword": {},
+        })
+    paths = report_out_paths(report)
+    results = crud.path_summaries(db, paths)
+
+    nodes = []
+    for path in paths:
+        nodes.append({
+            "name": path,
+            "category": results[path],
+        })
+    links = []
+    for dep in report['dependencies']:
+        for dependee in dep['dependsOn']:
+            links.append({
+                "source": paths.index(dep['ref']),
+                "target": paths.index(dependee),
+            })
+    return {
+            "type": "force",
+            "legend": legend,
+            "categories": categories,
+            "color": color,
+            "nodes": nodes,
+            "links": links,
+    }
 
 @app.put("/reports/{name}")
 def define_report(

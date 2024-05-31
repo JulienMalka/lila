@@ -41,7 +41,8 @@ $.get(document.location.pathname + '/graph-data.json', function (webkitDep) {
       {
         type: 'graph',
         layout: 'force',
-        animation: false,
+        edgeSymbol: ['circle', 'arrow'],
+        animation: true,
         label: {
           position: 'right',
           formatter: '{b}'
@@ -53,6 +54,10 @@ $.get(document.location.pathname + '/graph-data.json', function (webkitDep) {
           return node;
         }),
         categories: webkitDep.categories,
+        // a bit overwhelming - can we add a delay?
+        //emphasis: {
+        //  focus: 'adjacency'
+        //},
         force: {
           edgeLength: 5,
           repulsion: 20,

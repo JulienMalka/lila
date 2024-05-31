@@ -1,13 +1,29 @@
 <html>
 <head>
   <meta charset="utf-8"/>
-  <!-- todo ship -->
-  <script src="https://cdn.jsdelivr.net/npm/echarts@5.5.0/dist/echarts.min.js"></script>
-  <!-- todo ship or replace -->
-  <script src=" https://cdn.jsdelivr.net/npm/jquery@3.7.1/dist/jquery.min.js "></script>
+  <script src="/static/echarts.min.js"></script>
+  <!-- TODO perhaps replace -->
+  <script src="/static/jquery.min.js "></script>
 </head>
 <body>
-  <div id="main" style="width: 1000; height: 1000"></div>
+  <h1>Reproducibility report</h1>
+  <p>
+  This is an report based on the experimental
+  <a href="https://github.com/JulienMalka/lila">lila</a>
+  hash collection infrastructure for NixOS. The graph below shows whether hashes
+  collected from independent rebuilders agree. Paths are divided into five categories:
+  <ul>
+    <li><b>No builds:</b> no builders provided a hash for this path. Populating the report
+      might still be in progress, or <a href="https://github.com/JulienMalka/lila/issues/39">#39</a>
+    <li><b>One build:</b> this path appeared only once. Populating the report
+      might still be in progress, or <a href="https://github.com/JulienMalka/lila/issues/40">#40</a>
+    <li><b>Partially reproduced:</b> some but, not all, builders agreed on the hash. At this point this likely just means the build is nondeterministic, but it might be good to double-check for malicious builds.
+    <li><b>Successfully reproduced:</b> several builders reported the same hash.
+    <li><b>Consistently nondeterministic:</b> no builders agreed on the hash. The build is likely nondeterministic.
+  </ul>
+  </p>
+
+  <div id="main" style="width: 100%; height: 80%"></div>
   <script>
 var option;
 const myChart = echarts.init(document.getElementById('main'))
@@ -46,6 +62,9 @@ $.get(document.location.pathname + '/graph-data.json', function (webkitDep) {
       }
     ]
   };
+  myChart.on('click', function(params) {
+    alert(params.name);
+  });
   myChart.setOption(option);
 });
   </script>

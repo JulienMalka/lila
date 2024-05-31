@@ -4,6 +4,7 @@ import random
 import typing as t
 from fastapi import Depends, FastAPI, Header, HTTPException, Response
 from fastapi.security.http import HTTPAuthorizationCredentials, HTTPBearer
+from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
 from starlette.responses import FileResponse
 from sqlalchemy.orm import Session
@@ -26,6 +27,8 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+app.mount("/static", StaticFiles(directory="web/static",html=True), name="static")
 
 get_bearer_token = HTTPBearer(auto_error=False)
 

@@ -75,7 +75,9 @@ $.get(document.location.pathname + '/graph-data.json', function (webkitDep) {
     ]
   };
   myChart.on('click', function(params) {
-    alert(params.name);
+    if (params.dataType == 'node') {
+      alert(params.name);
+    }
   });
   myChart.setOption(option);
 });

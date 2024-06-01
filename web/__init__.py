@@ -29,6 +29,7 @@ app.add_middleware(
 )
 
 app.mount("/static", StaticFiles(directory="web/static",html=True), name="static")
+app.mount("/styles", StaticFiles(directory="web/styles"), name="styles")
 
 get_bearer_token = HTTPBearer(auto_error=False)
 

@@ -1,10 +1,10 @@
-use libnixstore::{query_path_info, sign_string, Radix::Base32};
+//use libnixstore::{query_path_info, sign_string, Radix::Base32};
 use nix_hash_collection_utils::*;
 use reqwest::Result;
 
 #[tokio::main]
 async fn main() -> Result<()> {
-    libnixstore::init();
+    //libnixstore::init();
     let token = read_env_var_or_panic("HASH_COLLECTION_TOKEN");
     let secret_key = read_env_var_or_panic("HASH_COLLECTION_SECRET_KEY");
     let collection_server = read_env_var_or_panic("HASH_COLLECTION_SERVER");
@@ -20,15 +20,15 @@ async fn main() -> Result<()> {
     let output_attestations: Vec<_> = out_paths
         .split(" ")
         .map(|path| -> OutputAttestation {
-            let info = query_path_info(path, Base32).unwrap();
-            let hash = info.narhash;
-            let size = info.size;
-            let fingerprint = fingerprint(path, &hash, size);
-            let signature = sign_string(secret_key.as_str(), &fingerprint).expect("Failed to sign fingerprint");
+            //let info = query_path_info(path, Base32).unwrap();
+            //let hash = info.narhash;
+            //let size = info.size;
+            //let fingerprint = fingerprint(path, &hash, size);
+            //let signature = sign_string(secret_key.as_str(), &fingerprint).expect("Failed to sign fingerprint");
             return OutputAttestation {
-                output_path: path,
-                output_hash: hash,
-                output_sig: signature
+                output_path: "42",//path,
+                output_hash: "42".to_string(),//hash,
+                output_sig: String::from("42")//signature
             }
         })
         .collect();

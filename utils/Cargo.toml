@@ -6,8 +6,8 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
+libc = "0.2.169"
 reqwest = { version = "0.11", features = ["json"] } 
-libnixstore = { git = "https://github.com/JulienMalka/harmonia.git" }
 tokio = { version = "1", features = ["full"] }
 serde = { version = "1", features = ["derive"] }
 regex = "1"

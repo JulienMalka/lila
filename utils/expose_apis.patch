@@ -1,3 +1,39 @@
+diff --git a/src/libstore-c/nix_api_store.cc b/src/libstore-c/nix_api_store.cc
+index 79841ca49..7c77d3db3 100644
+--- a/src/libstore-c/nix_api_store.cc
++++ b/src/libstore-c/nix_api_store.cc
+@@ -135,6 +135,17 @@ void nix_store_path_name(const StorePath * store_path, nix_get_string_callback c
+     callback(name.data(), name.size(), user_data);
+ }
+ 
++char * nix_store_path_nar_hash(const Store * store, const StorePath * store_path)
++{
++    std::string result = store->ptr->queryPathInfo(store_path->path)->narHash.to_string(nix::HashFormat::Nix32, true);
++    return strdup(result.c_str());
++}
++
++unsigned int nix_store_path_nar_size(const Store * store, const StorePath * store_path)
++{
++    return store->ptr->queryPathInfo(store_path->path)->narSize;
++}
++
+ void nix_store_path_free(StorePath * sp)
+ {
+     delete sp;
+diff --git a/src/libstore-c/nix_api_store.h b/src/libstore-c/nix_api_store.h
+index 4b2134457..f65d9b599 100644
+--- a/src/libstore-c/nix_api_store.h
++++ b/src/libstore-c/nix_api_store.h
+@@ -99,6 +99,9 @@ StorePath * nix_store_parse_path(nix_c_context * context, Store * store, const c
+  */
+ void nix_store_path_name(const StorePath * store_path, nix_get_string_callback callback, void * user_data);
+ 
++char * nix_store_path_nar_hash(const Store * store, const StorePath * store_path);
++unsigned int nix_store_path_nar_size(const Store * store, const StorePath * store_path);
++
+ /**
+  * @brief Copy a StorePath
+  *
 diff --git a/src/libutil-c/nix_api_util.cc b/src/libutil-c/nix_api_util.cc
 index 4f65a4c12..551d48dcf 100644
 --- a/src/libutil-c/nix_api_util.cc

@@ -1,4 +1,3 @@
-//use libnixstore::{hash_path, query_path_info, sign_string, Radix::Base32};
 use nix_hash_collection_utils::*;
 use reqwest::Result;
 

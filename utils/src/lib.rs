@@ -10,7 +10,8 @@ use std::ffi::{CStr,CString};
 // https://github.com/nixops4/nixops4/tree/main/rust/nix-util
 #[link(name = "nixutilc")]
 extern {
-    fn hash_path(input: *const c_char) -> *const c_char;
+    fn hash_path(input: *const c_char) -> *mut c_char;
+    fn sign_detached(secret_key: *const c_char, data: *const c_char) -> *mut c_char;
 }
 
 pub fn my_hash_path(input: String) -> String {
@@ -19,6 +20,16 @@ pub fn my_hash_path(input: String) -> String {
         CStr::from_ptr(hash_path(instr.as_ptr()))
     };
     return String::from_utf8_lossy(cstr.to_bytes()).to_string();
+}
+
+pub fn my_sign_detached(secret_key: &str, data: String) -> String {
+    let signature_cstr = unsafe {
+        let secret_key_cstr = CString::new(secret_key).unwrap();
+        let data_cstr = CString::new(data).unwrap();
+        // TODO error handling (e.g. invalid key format)
+        CStr::from_ptr(sign_detached(secret_key_cstr.as_ptr(), data_cstr.as_ptr()))
+    };
+    return String::from_utf8_lossy(signature_cstr.to_bytes()).to_string();
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -37,7 +48,9 @@ pub fn read_env_var_or_panic(variable: &str) -> String {
 
 pub fn parse_drv_hash<'a>(drv_path: &'a str) -> &'a str {
     let re = Regex::new(r"\/nix\/store\/(.*)\.drv").unwrap();
-    re.captures(drv_path).unwrap().get(1).unwrap().as_str()
+    re.captures(drv_path)
+        .expect("Derivation path should be of the form /nix/store/???.drv")
+        .get(1).unwrap().as_str()
 }
 
 //pub fn fingerprint(out_path: &str, nar_hash: &str, size: u64) -> String {

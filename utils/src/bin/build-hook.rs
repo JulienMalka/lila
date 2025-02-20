@@ -21,12 +21,11 @@ async fn main() -> Result<()> {
         .map(|path| -> OutputAttestation {
             let hash = nar_hash(ctx, path.to_string());
             let size = nar_size(ctx, path.to_string());
-            //let fingerprint = fingerprint(path, &hash, size);
-            //let signature = sign_string(secret_key.as_str(), &fingerprint).expect("Failed to sign fingerprint");
-            let signature = my_sign_detached(secret_key.as_str(), String::from("42"));
+            let fingerprint = fingerprint(ctx, path, &hash, size);
+            let signature = my_sign_detached(secret_key.as_str(), fingerprint);
             return OutputAttestation {
-                output_path: "42",//path,
-                output_hash: "42".to_string(),//hash,
+                output_path: path,
+                output_hash: hash,
                 output_sig: signature
             }
         })

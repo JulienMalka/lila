@@ -1,4 +1,3 @@
-//use libnixstore::query_references;
 use regex::Regex;
 use reqwest::Result;
 use serde::{Deserialize, Serialize};
@@ -49,6 +48,7 @@ extern {
     fn nix_store_free(store: *mut Store);
     fn nix_store_path_nar_hash(store: *mut Store, store_path: *const StorePath) -> *mut c_char;
     fn nix_store_path_nar_size(store: *mut Store, store_path: *const StorePath) -> u64;
+    fn nix_store_path_references(store: *mut Store, store_path: *const StorePath) -> *mut *mut c_char;
 }
 #[link(name = "nixutilc")]
 extern {
@@ -89,6 +89,35 @@ pub fn nar_size(ctx: Ctx, path: String) -> u64 {
     }
 }
 
+fn query_references(ctx: Ctx, path: &str) -> Vec<String> {
+    unsafe {
+        let cpath = CString::new(path).unwrap();
+        let path = nix_store_parse_path(ctx.context, ctx.store, cpath.as_ptr());
+        let c_strs = nix_store_path_references(ctx.store, path);
+        nix_store_path_free(path);
+
+        let mut result = Vec::new();
+        if c_strs.is_null() {
+            return result;
+        }
+
+        let mut i = 0;
+        loop {
+            let c_str = *c_strs.add(i);
+            if c_str.is_null() {
+                break;
+            }
+
+            let ref_path = CStr::from_ptr(c_str).to_string_lossy().into_owned();
+            result.push(ref_path);
+            i += 1;
+        }
+
+        return result
+    }
+}
+
+
 pub fn my_hash_path(input: String) -> String {
     let cstr = unsafe {
         let instr = CString::new(input).unwrap();
@@ -128,14 +157,14 @@ pub fn parse_drv_hash<'a>(drv_path: &'a str) -> &'a str {
         .get(1).unwrap().as_str()
 }
 
-//pub fn fingerprint(out_path: &str, nar_hash: &str, size: u64) -> String {
-//    // It is OK to take the references from the store, as those are determined
-//    // based on the derivation (not the build), and the 'security' part of the
-//    // fingerprint is the nar_hash anyway, not the other metadata elements:
-//    let references = query_references(out_path).expect("Query references").join(",");
-//    let fingerprint = format!("1;{out_path};{nar_hash};{size};{references}").to_string();
-//    return fingerprint;
-//}
+pub fn fingerprint(ctx: Ctx, out_path: &str, nar_hash: &str, size: u64) -> String {
+    // It is OK to take the references from the store, as those are determined
+    // based on the derivation (not the build), and the 'security' part of the
+    // fingerprint is the nar_hash anyway, not the other metadata elements:
+    let references = query_references(ctx, out_path).join(",");
+    let fingerprint = format!("1;{out_path};{nar_hash};{size};{references}").to_string();
+    return fingerprint;
+}
 
 pub async fn post(collection_server: &str, token: &str, drv_ident: &str, output_attestations: &Vec<OutputAttestation<'_>>) -> Result<()> {
     let client = reqwest::Client::new();

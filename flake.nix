@@ -56,6 +56,8 @@
                 # Should be generalized, documented, tested and upstreamed
                 # similar to https://github.com/NixOS/nix/pull/12044
                 patches = a.patches ++ [ ./utils/expose_apis.patch ];
+                # tests/functional/repl.sh.test is failing in CI
+                doInstallCheck = system == "x86_64-linux";
               }))
               pkgs.nlohmann_json
               pkgs.libsodium

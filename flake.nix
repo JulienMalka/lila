@@ -2,7 +2,7 @@
   description = "Nix hash collection";
 
   inputs = {
-    nixpkgs.url = "github:nixos/nixpkgs";
+    nixpkgs.url = "github:nixos/nixpkgs/nixos-unstable";
     flake-utils.url = "github:numtide/flake-utils";
     flake-compat.url = "github:edolstra/flake-compat";
     queued-build-hook.url = "github:JulienMalka/queued-build-hook/postbuildscript";
@@ -52,7 +52,13 @@
               pkgs.jq
               pkgs.rust-analyzer
               pkgs.openssl
-              pkgs.nixVersions.nix_2_19
+              (pkgs.nixVersions.git.overrideAttrs(a: {
+                # Should be generalized, documented, tested and upstreamed
+                # similar to https://github.com/NixOS/nix/pull/12044
+                patches = a.patches ++ [ ./utils/expose_apis.patch ];
+                # tests/functional/repl.sh.test is failing in CI
+                doInstallCheck = system == "x86_64-linux";
+              }))
               pkgs.nlohmann_json
               pkgs.libsodium
               pkgs.boost

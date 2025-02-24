@@ -1,0 +1,97 @@
+diff --git a/src/libstore-c/nix_api_store.cc b/src/libstore-c/nix_api_store.cc
+index 79841ca49..226f8e00d 100644
+--- a/src/libstore-c/nix_api_store.cc
++++ b/src/libstore-c/nix_api_store.cc
+@@ -135,6 +135,29 @@ void nix_store_path_name(const StorePath * store_path, nix_get_string_callback c
+     callback(name.data(), name.size(), user_data);
+ }
+ 
++char * nix_store_path_nar_hash(const Store * store, const StorePath * store_path)
++{
++    std::string result = store->ptr->queryPathInfo(store_path->path)->narHash.to_string(nix::HashFormat::Nix32, true);
++    return strdup(result.c_str());
++}
++
++unsigned int nix_store_path_nar_size(const Store * store, const StorePath * store_path)
++{
++    return store->ptr->queryPathInfo(store_path->path)->narSize;
++}
++
++char ** nix_store_path_references(const Store * store, const StorePath * store_path)
++{
++    nix::StorePathSet set = store->ptr->queryPathInfo(store_path->path)->references;
++    char ** result = (char**) calloc(set.size() + 1, sizeof(char*));
++    int i = 0;
++    for (const nix::StorePath path : set) {
++      result[i] = strdup(store->ptr->printStorePath(path).c_str());
++      i++;
++    }
++    return result;
++}
++
+ void nix_store_path_free(StorePath * sp)
+ {
+     delete sp;
+diff --git a/src/libstore-c/nix_api_store.h b/src/libstore-c/nix_api_store.h
+index 4b2134457..fdcf39c81 100644
+--- a/src/libstore-c/nix_api_store.h
++++ b/src/libstore-c/nix_api_store.h
+@@ -99,6 +99,10 @@ StorePath * nix_store_parse_path(nix_c_context * context, Store * store, const c
+  */
+ void nix_store_path_name(const StorePath * store_path, nix_get_string_callback callback, void * user_data);
+ 
++char * nix_store_path_nar_hash(const Store * store, const StorePath * store_path);
++unsigned int nix_store_path_nar_size(const Store * store, const StorePath * store_path);
++char ** nix_store_path_references(const Store * store, const StorePath * store_path);
++
+ /**
+  * @brief Copy a StorePath
+  *
+diff --git a/src/libutil-c/nix_api_util.cc b/src/libutil-c/nix_api_util.cc
+index 4f65a4c12..551d48dcf 100644
+--- a/src/libutil-c/nix_api_util.cc
++++ b/src/libutil-c/nix_api_util.cc
+@@ -3,6 +3,10 @@
+ #include "error.hh"
+ #include "nix_api_util_internal.h"
+ #include "util.hh"
++#include "source-path.hh"
++#include "posix-source-accessor.hh"
++#include "file-content-address.hh"
++#include "signature/local-keys.hh"
+ 
+ #include <cxxabi.h>
+ #include <typeinfo>
+@@ -142,6 +146,17 @@ nix_err nix_err_code(const nix_c_context * read_context)
+     return read_context->last_err_code;
+ }
+ 
++char * hash_path(const char * path) {
++    nix::Hash hash = nix::hashPath(
++        nix::PosixSourceAccessor::createAtRoot(path),
++        nix::FileIngestionMethod::NixArchive,
++        nix::HashAlgorithm::SHA256).first;
++    return strdup(hash.to_string(nix::HashFormat::Nix32, false).c_str());
++}
++
++char * sign_detached(const char * secret_key, const char * data) {
++    return strdup(nix::SecretKey(secret_key).signDetached(data).c_str());
++}
+ // internal
+ nix_err call_nix_get_string_callback(const std::string str, nix_get_string_callback callback, void * user_data)
+ {
+diff --git a/src/libutil-c/nix_api_util.h b/src/libutil-c/nix_api_util.h
+index ad6f32859..c2140f2df 100644
+--- a/src/libutil-c/nix_api_util.h
++++ b/src/libutil-c/nix_api_util.h
+@@ -293,6 +293,10 @@ nix_err nix_err_code(const nix_c_context * read_context);
+  */
+ nix_err nix_set_err_msg(nix_c_context * context, nix_err err, const char * msg);
+ 
++char * hash_path(const char * path);
++
++char * sign_detached(const char * secret_key, const char * data);
++
+ /**
+  *  @}
+  */

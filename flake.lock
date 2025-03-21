@@ -263,6 +263,7 @@
       },
       "original": {
         "owner": "mschwaig",
+        "ref": "rolling-release-for-lila",
         "repo": "laut",
         "type": "github"
       }

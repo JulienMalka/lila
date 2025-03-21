@@ -5,6 +5,7 @@
     nixpkgs.url = "github:nixos/nixpkgs/nixos-unstable";
     flake-utils.url = "github:numtide/flake-utils";
     flake-compat.url = "github:edolstra/flake-compat";
+    laut.url = "github:mschwaig/laut/rolling-release-for-lila";
     queued-build-hook.url = "github:JulienMalka/queued-build-hook/postbuildscript";
   };
 

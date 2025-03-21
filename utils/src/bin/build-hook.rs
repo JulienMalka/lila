@@ -1,5 +1,6 @@
 use nix_hash_collection_utils::*;
 use reqwest::Result;
+use std::process::Command;
 
 #[tokio::main]
 async fn main() -> Result<()> {
@@ -16,12 +17,28 @@ async fn main() -> Result<()> {
         drv_ident, collection_server
     );
 
+    
+    let laut_sig_p = Command::new("laut")
+	.env("OUT_PATHS", out_paths.clone())
+	.arg("sign")
+	.arg("--secret-key-file")
+	.arg("/etc/nix/private-key")
+	.arg(&drv_path)
+	.output()
+	.expect("");
+
+    let laut_sig: Option<_> = match laut_sig_p.status.code() {
+	Some(0) => Some(String::from_utf8_lossy(&laut_sig_p.stdout).into_owned()),
+	_ => None
+    };
+
     let output_attestations: Vec<_> = out_paths
         .split(" ")
         .map(|path| -> OutputAttestation {
             let hash = nar_hash(ctx, path.to_string());
             let size = nar_size(ctx, path.to_string());
             let fingerprint = fingerprint(ctx, path, &hash, size);
+
             let signature = my_sign_detached(secret_key.as_str(), fingerprint);
             return OutputAttestation {
                 output_path: path,
@@ -31,6 +48,6 @@ async fn main() -> Result<()> {
         })
         .collect();
 
-    post(&collection_server, &token, &drv_ident, &output_attestations).await?;
+    post(&collection_server, &token, &drv_ident, &output_attestations, &laut_sig).await?;
     Ok(())
 }

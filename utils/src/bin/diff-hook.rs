@@ -1,5 +1,6 @@
 use nix_hash_collection_utils::*;
 use reqwest::Result;
+use std::process::Command;
 
 #[tokio::main]
 async fn main() -> Result<()> {
@@ -30,6 +31,6 @@ async fn main() -> Result<()> {
         }
     ];
 
-    post(&collection_server, &token, &drv_ident, &output_attestations).await?;
+    post(&collection_server, &token, &drv_ident, &output_attestations, &None).await?;
     Ok(())
 }

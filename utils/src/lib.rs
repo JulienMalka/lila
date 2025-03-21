@@ -166,7 +166,7 @@ pub fn fingerprint(ctx: Ctx, out_path: &str, nar_hash: &str, size: u64) -> Strin
     return fingerprint;
 }
 
-pub async fn post(collection_server: &str, token: &str, drv_ident: &str, output_attestations: &Vec<OutputAttestation<'_>>) -> Result<()> {
+pub async fn post(collection_server: &str, token: &str, drv_ident: &str, output_attestations: &Vec<OutputAttestation<'_>>, laut_sig: &Option<String>) -> Result<()> {
     let client = reqwest::Client::new();
     client
         .post(format!("{0}/attestation/{1}", collection_server, drv_ident))

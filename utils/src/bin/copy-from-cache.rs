@@ -54,6 +54,6 @@ async fn main() -> Result<()> {
     let out_path = &args[1];
     let (drv_ident, output) = fetch(&out_path).await;
 
-    post(&collection_server, &token, &drv_ident, &Vec::from([output])).await?;
+    post(&collection_server, &token, &drv_ident, &Vec::from([output]), &None).await?;
     Ok(())
 }

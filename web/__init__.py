@@ -4,7 +4,9 @@ import random
 import typing as t
 from fastapi import Depends, FastAPI, Header, HTTPException, Response
 from fastapi.security.http import HTTPAuthorizationCredentials, HTTPBearer
+from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
+from starlette.responses import FileResponse
 from sqlalchemy.orm import Session
 
 from . import models, schemas, crud, user_controller
@@ -25,6 +27,9 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+app.mount("/static", StaticFiles(directory="web/static",html=True), name="static")
+app.mount("/styles", StaticFiles(directory="web/styles"), name="styles")
 
 get_bearer_token = HTTPBearer(auto_error=False)
 
@@ -126,6 +131,8 @@ def attestations_by_out(output_path: str, db: Session = Depends(get_db)):
 
 def report_out_paths(report):
     paths = []
+    root = report['metadata']['component']['bom-ref']
+    paths.append(root)
     for component in report['components']:
         for prop in component['properties']:
             if prop['name'] == "nix:out_path":
@@ -159,125 +166,6 @@ def printtree(root, deps, results, cur_indent=0, seen=None):
               #result = result + "\n    " + d
   return result
 
-def htmltree(root, deps, results):
-  def icon(result):
-      if result == "No builds":
-          return "❔ "
-      elif result == "One build":
-          return "❎ "
-      elif result == "Partially reproduced":
-          return "❕ "
-      elif result == "Successfully reproduced":
-          return "✅ "
-      elif result == "Consistently nondeterministic":
-          return "❌ "
-      else:
-          return ""
-  def generatetree(root, seen):
-    if root in seen:
-      return f'<summary title="{root}">...</summary>'
-    seen[root] = True;
-
-    result = f'<summary title="{root}">'
-    if root in results:
-      result = result + f'<span title="{results[root]}">' + icon(results[root]) + "</span>" + root[44:] + " "
-    else:
-      result = result + root[44:]
-    result = result + "</summary>\n"
-    result = result + "<ul>"
-    for dep in deps:
-        if dep['ref'] == root and 'dependsOn' in dep:
-            for d in dep['dependsOn']:
-                result += f'<li><details class="{d}" open>'
-                result += generatetree(d, seen)
-                result += "</details></li>"
-    result = result + "</ul>"
-    return result
-  tree = generatetree(root, {})
-  return '''
-  <html>
-  <head>
-    <style>
-      .tree{
-        --spacing : 1.5rem;
-        --radius  : 8px;
-      }
-
-      .tree li{
-        display      : block;
-        position     : relative;
-        padding-left : calc(2 * var(--spacing) - var(--radius) - 2px);
-      }
-      
-      .tree ul{
-        margin-left  : calc(var(--radius) - var(--spacing));
-        padding-left : 0;
-      }
-      
-      .tree ul li{
-        border-left : 2px solid #ddd;
-      }
-      
-      .tree ul li:last-child{
-        border-color : transparent;
-      }
-      
-      .tree ul li::before{
-        content      : '';
-        display      : block;
-        position     : absolute;
-        top          : calc(var(--spacing) / -2);
-        left         : -2px;
-        width        : calc(var(--spacing) + 2px);
-        height       : calc(var(--spacing) + 1px);
-        border       : solid #ddd;
-        border-width : 0 0 2px 2px;
-      }
-      
-      .tree summary{
-        display : block;
-        cursor  : pointer;
-      }
-      
-      .tree summary::marker,
-      .tree summary::-webkit-details-marker{
-        display : none;
-      }
-      
-      .tree summary:focus{
-        outline : none;
-      }
-      
-      .tree summary:focus-visible{
-        outline : 1px dotted #000;
-      }
-      
-      .tree li::after,
-      .tree summary::before{
-        content       : '';
-        display       : block;
-        position      : absolute;
-        top           : calc(var(--spacing) / 2 - var(--radius));
-        left          : calc(var(--spacing) - var(--radius) - 1px);
-        width         : calc(2 * var(--radius));
-        height        : calc(2 * var(--radius));
-        border-radius : 50%;
-        background    : #ddd;
-      }
-      
-    </style>
-  </head>
-  ''' + f'''
-  <body>
-    <ul class="tree">
-    <li>
-    {tree}
-    </li>
-    </ul>
-  </body>
-  </html>
-'''
-
 @app.get("/reports/{name}")
 def report(
     name: str,
@@ -293,19 +181,70 @@ def report(
             content=json.dumps(report),
             media_type='application/vnd.cyclonedx+json')
 
-    paths = report_out_paths(report)
-
-    root = report['metadata']['component']['bom-ref']
-    results = crud.path_summaries(db, paths)
-
     if 'text/html' in accept:
-        return Response(
-            content=htmltree(root, report['dependencies'], results),
-            media_type='text/html')
+        return FileResponse('web/static/report.html')
     else:
+        paths = report_out_paths(report)
+        root = report['metadata']['component']['bom-ref']
+        results = crud.path_summaries(db, paths)
         return Response(
             content=printtree(root, report['dependencies'], results),
             media_type='text/plain')
+
+@app.get("/reports/{name}/graph-data.json")
+def graph_data(
+    name: str,
+    db: Session = Depends(get_db),
+):
+    report = crud.report(db, name)
+    if report == None:
+        raise HTTPException(status_code=404, detail="Report not found")
+
+    legend = [
+        "No builds",
+        "One build",
+        "Partially reproduced",
+        "Successfully reproduced",
+        "Consistently nondeterministic",
+    ];
+    color = [
+        "#eeeeee",
+        "#aaaaaa",
+        "#eeaaaa",
+        "#00ee00",
+        "#ee0000",
+    ];
+    categories = []
+    for category in legend:
+        categories.append({
+            "name": category,
+            "base": category,
+            "keyword": {},
+        })
+    paths = report_out_paths(report)
+    results = crud.path_summaries(db, paths)
+
+    nodes = []
+    for path in paths:
+        nodes.append({
+            "name": path,
+            "category": results[path],
+        })
+    links = []
+    for dep in report['dependencies']:
+        for dependee in dep['dependsOn']:
+            links.append({
+                "source": paths.index(dep['ref']),
+                "target": paths.index(dependee),
+            })
+    return {
+            "type": "force",
+            "legend": legend,
+            "categories": categories,
+            "color": color,
+            "nodes": nodes,
+            "links": links,
+    }
 
 @app.put("/reports/{name}")
 def define_report(

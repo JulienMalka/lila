@@ -25,10 +25,20 @@
         system:
         let
           pkgs = nixpkgs.legacyPackages.${system};
+          # Should be generalized, documented, tested and upstreamed
+          # similar to https://github.com/NixOS/nix/pull/12044
+          patched-nix =
+            (pkgs.nixVersions.git.appendPatches [
+              ./utils/nix-expose-apis.patch
+              ./utils/nix-fix-repl-test.patch
+            ]).overrideAttrs(a: {
+              # tests/functional/repl.sh.test is failing in CI
+              doInstallCheck = pkgs.stdenv.hostPlatform.system == "x86_64-linux";
+            });
         in
         rec {
           packages = rec {
-            utils = pkgs.callPackage ./utils { };
+            utils = pkgs.callPackage ./utils { inherit patched-nix; };
             web = pkgs.python3.pkgs.callPackage ./backend.nix { };
             default = utils;
           };
@@ -52,13 +62,7 @@
               pkgs.jq
               pkgs.rust-analyzer
               pkgs.openssl
-              (pkgs.nixVersions.git.overrideAttrs(a: {
-                # Should be generalized, documented, tested and upstreamed
-                # similar to https://github.com/NixOS/nix/pull/12044
-                patches = a.patches ++ [ ./utils/expose_apis.patch ];
-                # tests/functional/repl.sh.test is failing in CI
-                doInstallCheck = system == "x86_64-linux";
-              }))
+              patched-nix
               pkgs.nlohmann_json
               pkgs.libsodium
               pkgs.boost

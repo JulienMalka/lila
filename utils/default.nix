@@ -1,4 +1,4 @@
-{ stdenv, rustPlatform, pkg-config, openssl, nlohmann_json, boost, nixVersions, libsodium, ... }:
+{ stdenv, rustPlatform, pkg-config, openssl, nlohmann_json, boost, patched-nix, libsodium, ... }:
 
 rustPlatform.buildRustPackage rec {
   name = "nix-hash-collection-utils";
@@ -8,13 +8,7 @@ rustPlatform.buildRustPackage rec {
 
   buildInputs = [
     openssl
-    (nixVersions.git.overrideAttrs(a: {
-      # Should be generalized, documented, tested and upstreamed
-      # similar to https://github.com/NixOS/nix/pull/12044
-      patches = a.patches ++ [ ./expose_apis.patch ];
-      # tests/functional/repl.sh.test is failing in CI
-      doInstallCheck = stdenv.hostPlatform.system == "x86_64-linux";
-    }))
+    patched-nix
     nlohmann_json
     libsodium
     boost

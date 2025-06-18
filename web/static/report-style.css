@@ -8,6 +8,10 @@ h1,h2 {
   color: #6586c8;
 }
 
+.extlink {
+  text-decoration: none;
+}
+
 code {
   font-family: "Fira Mono", monospace;
   color: #ff8657;

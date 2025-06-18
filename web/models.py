@@ -82,3 +82,8 @@ class Report(Base):
     # later we might want to normalize it into its own database
     # structure.
     definition: Mapped[str] = mapped_column()
+
+class LinkPattern(Base):
+    __tablename__ = "link_patterns"
+    pattern: Mapped[str] = mapped_column(primary_key=True)
+    link: Mapped[str] = mapped_column()

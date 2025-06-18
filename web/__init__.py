@@ -2,6 +2,7 @@ from collections import defaultdict
 import json
 import pathlib
 import random
+import re
 import typing as t
 from fastapi import Depends, FastAPI, Header, HTTPException, Response
 from fastapi.security.http import HTTPAuthorizationCredentials, HTTPBearer
@@ -163,7 +164,7 @@ def printtree(root, deps, results, cur_indent=0, seen=None):
               #result = result + "\n    " + d
   return result
 
-def htmlview(root, deps, results):
+def htmlview(root, deps, results, link_patterns):
   def icon(result):
       if result == "No builds":
           return "❔ "
@@ -202,8 +203,20 @@ def htmlview(root, deps, results):
   def number_and_percentage(n: int, total: int) -> int:
     return f"{n} ({str(100*n/total)[:4]}%)"
 
+  def link(derivation: str) -> str:
+      name = derivation[44:]
+      link = None
+      for lp in link_patterns:
+          if re.match(lp.pattern, name):
+              link = lp.link
+      result = f"<li><a href='/attestations/by-output/{derivation[11:]}'>{name}</a>"
+      if link:
+          result += f" <a class='extlink' target='_blank' href='{link}'>🔗</a>"
+      return result
+
   def generate_list(derivations: list) -> str:
-      return "<ul>" + "\n".join(list(map(lambda d: f"<li><a href='/attestations/by-output/{d[11:]}'>{d[44:]}</a>\n", derivations))) + "</ul>"
+
+      return "<ul>" + "\n".join(list(map(link, derivations))) + "</ul>"
 
   def generate_lists():
     resultsbytype = defaultdict(list)
@@ -346,8 +359,9 @@ def report(
     results = crud.path_summaries(db, paths)
 
     if 'text/html' in accept:
+        link_patterns = get_link_patterns(db)
         return Response(
-            content=htmlview(root, report['dependencies'], results),
+            content=htmlview(root, report['dependencies'], results, link_patterns),
             media_type='text/html')
     else:
         return Response(
@@ -368,3 +382,25 @@ def define_report(
     return {
         "Report defined"
     }
+
+@app.get("/link_patterns")
+def get_link_patterns(db: Session = Depends(get_db)):
+    reports = db.query(models.LinkPattern).all()
+    return reports
+    #names = []
+    #for report in reports:
+    #    names.append(report.name)
+    #return names
+
+@app.post("/link_patterns")
+def post_link_pattern(
+    pattern: str,
+    link: str,
+    token: str = Depends(get_token),
+    db: Session = Depends(get_db)
+):
+    user = crud.get_user_with_token(db, token)
+    if user == None:
+        raise HTTPException(status_code=401, detail="User not found")
+    crud.add_link_pattern(db, pattern, link)
+    return "OK"

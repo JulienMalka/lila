@@ -89,6 +89,15 @@ def define_report(db: Session, name: str, definition: dict):
         }))
     db.commit()
 
+def add_link_pattern(db: Session, pattern: str, link: str):
+    db.execute(
+        insert(models.LinkPattern).values({
+            "pattern": pattern,
+            "link": link,
+            }).on_conflict_do_update(index_elements=['pattern'], set_={'link': link})
+        )
+    db.commit()
+
 def get_user_with_token(db: Session, token_val: str):
     token = db.query(models.Token).filter_by(value=token_val).one_or_none()
     if token is None:

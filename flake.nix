@@ -53,7 +53,7 @@
               pkgs.jq
               pkgs.rust-analyzer
               pkgs.openssl
-              (nixpkgs.legacyPackages.callPackage ./utils/patched-nix {})
+              (pkgs.callPackage ./utils/patched-nix {})
               pkgs.nlohmann_json
               pkgs.libsodium
               pkgs.boost

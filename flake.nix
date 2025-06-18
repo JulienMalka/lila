@@ -26,20 +26,10 @@
         system:
         let
           pkgs = nixpkgs.legacyPackages.${system};
-          # Should be generalized, documented, tested and upstreamed
-          # similar to https://github.com/NixOS/nix/pull/12044
-          patched-nix =
-            (pkgs.nixVersions.git.appendPatches [
-              ./utils/nix-expose-apis.patch
-              ./utils/nix-fix-repl-test.patch
-            ]).overrideAttrs(a: {
-              # tests/functional/repl.sh.test is failing in CI
-              doInstallCheck = pkgs.stdenv.hostPlatform.system == "x86_64-linux";
-            });
         in
         rec {
           packages = rec {
-            utils = pkgs.callPackage ./utils { inherit patched-nix; };
+            utils = pkgs.callPackage ./utils { };
             web = pkgs.python3.pkgs.callPackage ./backend.nix { };
             default = utils;
           };
@@ -63,7 +53,7 @@
               pkgs.jq
               pkgs.rust-analyzer
               pkgs.openssl
-              patched-nix
+              (nixpkgs.legacyPackages.callPackage ./utils/patched-nix {})
               pkgs.nlohmann_json
               pkgs.libsodium
               pkgs.boost
@@ -72,12 +62,11 @@
 
             RUST_SRC_PATH = "${pkgs.rust.packages.stable.rustPlatform.rustLibSrc}";
           };
-          nixosModules.hash-collection = import ./utils/nixos/module.nix queued-build-hook.nixosModules.queued-build-hook;
-          nixosModules.hash-collection-server = import ./web/nixos/module.nix;
         }
       )
-    );
-    #// {
-
-    #};
+    )
+    // {
+      nixosModules.hash-collection = import ./utils/nixos/module.nix queued-build-hook.nixosModules.queued-build-hook;
+      nixosModules.hash-collection-server = import ./web/nixos/module.nix;
+    };
 }

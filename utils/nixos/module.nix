@@ -1,10 +1,8 @@
 queued-build-hook-module:
-{ config, lib, pkgs, patched-nix, ... }:
+{ config, lib, pkgs, ... }:
 let
   cfg = config.services.hash-collection;
-  utils = pkgs.callPackage ../. {
-    inherit patched-nix;
-  };
+  utils = pkgs.callPackage ../. { };
 in
 with lib;
 {

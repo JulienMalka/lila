@@ -2,6 +2,7 @@ from collections import defaultdict
 import json
 import pathlib
 import random
+import re
 import typing as t
 from fastapi import Depends, FastAPI, Header, HTTPException, Response, Request
 from fastapi.security.http import HTTPAuthorizationCredentials, HTTPBearer
@@ -166,7 +167,7 @@ def printtree(root, deps, results, cur_indent=0, seen=None):
               #result = result + "\n    " + d
   return result
 
-def htmlview(root, deps, results):
+def htmlview(root, deps, results, link_patterns):
   def icon(result):
       if result == "No builds":
           return "❔ "
@@ -207,10 +208,15 @@ def htmlview(root, deps, results):
   def number_and_percentage(n: int, total: int) -> int:
     return f"{n} ({str(100*n/total)[:4]}%)"
 
+  def external_links(derivation: str) -> [ str ]:
+      name = derivation[44:]
+      return [ lp.link for lp in link_patterns if re.match(lp.pattern, name) ]
+
   def generate_list(derivations: list) -> dict:
       return { d: {
                     "name": d[44:],
                     "link": f"/attestations/by-output/{d[11:]}",
+                    "external_links": external_links(d)
                   } for d in derivations }
 
   def generate_lists():
@@ -264,8 +270,9 @@ async def report(
     results = crud.path_summaries(db, paths)
 
     if 'text/html' in accept:
+        link_patterns = get_link_patterns(db)
         return templates.TemplateResponse(
-            request = request, name="report.html", context=htmlview(root, report['dependencies'], results)
+            request = request, name="report.html", context=htmlview(root, report['dependencies'], results, link_patterns)
         )
     else:
         return Response(
@@ -286,3 +293,20 @@ def define_report(
     return {
         "Report defined"
     }
+
+@app.get("/link_patterns")
+def get_link_patterns(db: Session = Depends(get_db)):
+    return db.query(models.LinkPattern).all()
+
+@app.post("/link_patterns")
+def post_link_pattern(
+    pattern: str,
+    link: str,
+    token: str = Depends(get_token),
+    db: Session = Depends(get_db)
+):
+    user = crud.get_user_with_token(db, token)
+    if user == None:
+        raise HTTPException(status_code=401, detail="User not found")
+    crud.add_link_pattern(db, pattern, link)
+    return "OK"

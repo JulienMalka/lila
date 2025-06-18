@@ -1,6 +1,6 @@
-{ pkgs }:
+{ nixVersions }:
 
-(pkgs.nixVersions.git.appendPatches [
+(nixVersions.git.appendPatches [
   ./nix-expose-apis.patch
   ./nix-fix-repl-test.patch
 ])

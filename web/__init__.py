@@ -1,9 +1,12 @@
 from collections import defaultdict
 import json
+import pathlib
 import random
+import re
 import typing as t
 from fastapi import Depends, FastAPI, Header, HTTPException, Response
 from fastapi.security.http import HTTPAuthorizationCredentials, HTTPBearer
+from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
 
@@ -13,6 +16,8 @@ from .db import SessionLocal, engine
 models.Base.metadata.create_all(bind=engine)
 
 app = FastAPI()
+thispath = pathlib.Path(__file__).parent.resolve()
+app.mount("/static", StaticFiles(directory=str(thispath) + "/static"), name="static")
 
 origins = [
     "http://localhost:8000",
@@ -159,7 +164,7 @@ def printtree(root, deps, results, cur_indent=0, seen=None):
               #result = result + "\n    " + d
   return result
 
-def htmltree(root, deps, results):
+def htmlview(root, deps, results, link_patterns):
   def icon(result):
       if result == "No builds":
           return "❔ "
@@ -173,6 +178,7 @@ def htmltree(root, deps, results):
           return "❌ "
       else:
           return ""
+
   def generatetree(root, seen):
     if root in seen:
       return f'<summary title="{root}">...</summary>'
@@ -193,10 +199,51 @@ def htmltree(root, deps, results):
                 result += "</details></li>"
     result = result + "</ul>"
     return result
+
+  def number_and_percentage(n: int, total: int) -> int:
+    return f"{n} ({str(100*n/total)[:4]}%)"
+
+  def link(derivation: str) -> str:
+      name = derivation[44:]
+      link = None
+      for lp in link_patterns:
+          if re.match(lp.pattern, name):
+              link = lp.link
+      result = f"<li><a href='/attestations/by-output/{derivation[11:]}'>{name}</a>"
+      if link:
+          result += f" <a class='extlink' target='_blank' href='{link}'>🔗</a>"
+      return result
+
+  def generate_list(derivations: list) -> str:
+
+      return "<ul>" + "\n".join(list(map(link, derivations))) + "</ul>"
+
+  def generate_lists():
+    resultsbytype = defaultdict(list)
+    for drv in results:
+        resultsbytype[results[drv]].append(drv)
+    n_not_reproducible = number_and_percentage(
+        len(resultsbytype["Consistently nondeterministic"]) + len(resultsbytype["Partially reproduced"]),
+        len(results)
+      )
+    not_reproducible = generate_list(resultsbytype["Consistently nondeterministic"] + resultsbytype["Partially reproduced"])
+    n_not_checked = number_and_percentage(
+        len(resultsbytype["No builds"]) + len(resultsbytype["One build"]),
+        len(results)
+      )
+    not_checked = "One build (rebuild possibly failed or still in progress):" + generate_list(resultsbytype["One build"])
+    not_checked += "No builds (likely <a href='https://github.com/JulienMalka/lila/issues/39'>incorrectly reported</a>):" + generate_list(resultsbytype["No builds"])
+    return n_not_reproducible, not_reproducible, n_not_checked, not_checked
+
+  not_reproducible_n, not_reproducible, not_checked_n, not_checked = generate_lists()
+
   tree = generatetree(root, {})
+  title = root[44:]
   return '''
   <html>
   <head>
+    <title>NixOS Reproducible Builds report for {title}</title>
+    <link rel="stylesheet" href="/static/report-style.css">
     <style>
       .tree{
         --spacing : 1.5rem;
@@ -208,20 +255,20 @@ def htmltree(root, deps, results):
         position     : relative;
         padding-left : calc(2 * var(--spacing) - var(--radius) - 2px);
       }
-      
+
       .tree ul{
         margin-left  : calc(var(--radius) - var(--spacing));
         padding-left : 0;
       }
-      
+
       .tree ul li{
         border-left : 2px solid #ddd;
       }
-      
+
       .tree ul li:last-child{
         border-color : transparent;
       }
-      
+
       .tree ul li::before{
         content      : '';
         display      : block;
@@ -233,25 +280,25 @@ def htmltree(root, deps, results):
         border       : solid #ddd;
         border-width : 0 0 2px 2px;
       }
-      
+
       .tree summary{
         display : block;
         cursor  : pointer;
       }
-      
+
       .tree summary::marker,
       .tree summary::-webkit-details-marker{
         display : none;
       }
-      
+
       .tree summary:focus{
         outline : none;
       }
-      
+
       .tree summary:focus-visible{
         outline : 1px dotted #000;
       }
-      
+
       .tree li::after,
       .tree summary::before{
         content       : '';
@@ -264,11 +311,24 @@ def htmltree(root, deps, results):
         border-radius : 50%;
         background    : #ddd;
       }
-      
+
     </style>
   </head>
   ''' + f'''
   <body>
+    <h1>NixOS Reproducible Builds</h1>
+    <p>
+    Report for <code>{title}</code>:
+    </p>
+    <h2>Not reproducible: {not_reproducible_n}</h2>
+    <p>
+    {not_reproducible}
+    </p>
+    <h2>Not fully checked: {not_checked_n}</h2>
+    <p>
+    {not_checked}
+    </p>
+    <h2>Tree view:</h2>
     <ul class="tree">
     <li>
     {tree}
@@ -299,8 +359,9 @@ def report(
     results = crud.path_summaries(db, paths)
 
     if 'text/html' in accept:
+        link_patterns = get_link_patterns(db)
         return Response(
-            content=htmltree(root, report['dependencies'], results),
+            content=htmlview(root, report['dependencies'], results, link_patterns),
             media_type='text/html')
     else:
         return Response(
@@ -321,3 +382,25 @@ def define_report(
     return {
         "Report defined"
     }
+
+@app.get("/link_patterns")
+def get_link_patterns(db: Session = Depends(get_db)):
+    reports = db.query(models.LinkPattern).all()
+    return reports
+    #names = []
+    #for report in reports:
+    #    names.append(report.name)
+    #return names
+
+@app.post("/link_patterns")
+def post_link_pattern(
+    pattern: str,
+    link: str,
+    token: str = Depends(get_token),
+    db: Session = Depends(get_db)
+):
+    user = crud.get_user_with_token(db, token)
+    if user == None:
+        raise HTTPException(status_code=401, detail="User not found")
+    crud.add_link_pattern(db, pattern, link)
+    return "OK"

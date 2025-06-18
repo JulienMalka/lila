@@ -1,6 +1,9 @@
 from pydantic import BaseModel, RootModel
 from typing import Dict, List
 
+class ReportLink(BaseModel):
+    drv_regex: str
+    link: str
 
 class OutputHashPair(BaseModel):
     output_path: str

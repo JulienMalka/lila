@@ -72,12 +72,12 @@
 
             RUST_SRC_PATH = "${pkgs.rust.packages.stable.rustPlatform.rustLibSrc}";
           };
+          nixosModules.hash-collection = import ./utils/nixos/module.nix queued-build-hook.nixosModules.queued-build-hook;
+          nixosModules.hash-collection-server = import ./web/nixos/module.nix;
         }
       )
-    )
-    // {
+    );
+    #// {
 
-      nixosModules.hash-collection = import ./utils/nixos/module.nix queued-build-hook.nixosModules.queued-build-hook;
-      nixosModules.hash-collection-server = import ./web/nixos/module.nix;
-    };
+    #};
 }

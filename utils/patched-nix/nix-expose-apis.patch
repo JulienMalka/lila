@@ -1,8 +1,8 @@
 diff --git a/src/libstore-c/nix_api_store.cc b/src/libstore-c/nix_api_store.cc
-index 79841ca49..226f8e00d 100644
+index 92aed9187..19ff710d0 100644
 --- a/src/libstore-c/nix_api_store.cc
 +++ b/src/libstore-c/nix_api_store.cc
-@@ -135,6 +135,29 @@ void nix_store_path_name(const StorePath * store_path, nix_get_string_callback c
+@@ -158,6 +158,29 @@ void nix_store_path_name(const StorePath * store_path, nix_get_string_callback c
      callback(name.data(), name.size(), user_data);
  }
  
@@ -33,10 +33,10 @@ index 79841ca49..226f8e00d 100644
  {
      delete sp;
 diff --git a/src/libstore-c/nix_api_store.h b/src/libstore-c/nix_api_store.h
-index 4b2134457..fdcf39c81 100644
+index e55bc3f59..35b802c8c 100644
 --- a/src/libstore-c/nix_api_store.h
 +++ b/src/libstore-c/nix_api_store.h
-@@ -99,6 +99,10 @@ StorePath * nix_store_parse_path(nix_c_context * context, Store * store, const c
+@@ -125,6 +125,10 @@ StorePath * nix_store_parse_path(nix_c_context * context, Store * store, const c
   */
  void nix_store_path_name(const StorePath * store_path, nix_get_string_callback callback, void * user_data);
  
@@ -48,21 +48,21 @@ index 4b2134457..fdcf39c81 100644
   * @brief Copy a StorePath
   *
 diff --git a/src/libutil-c/nix_api_util.cc b/src/libutil-c/nix_api_util.cc
-index 4f65a4c12..551d48dcf 100644
+index 2254f18fa..5ade80343 100644
 --- a/src/libutil-c/nix_api_util.cc
 +++ b/src/libutil-c/nix_api_util.cc
 @@ -3,6 +3,10 @@
- #include "error.hh"
+ #include "nix/util/error.hh"
  #include "nix_api_util_internal.h"
- #include "util.hh"
-+#include "source-path.hh"
-+#include "posix-source-accessor.hh"
-+#include "file-content-address.hh"
-+#include "signature/local-keys.hh"
+ #include "nix/util/util.hh"
++#include "nix/util/source-path.hh"
++#include "nix/util/posix-source-accessor.hh"
++#include "nix/util/file-content-address.hh"
++#include "nix/util/signature/local-keys.hh"
  
  #include <cxxabi.h>
  #include <typeinfo>
-@@ -142,6 +146,17 @@ nix_err nix_err_code(const nix_c_context * read_context)
+@@ -150,6 +154,17 @@ nix_err nix_err_code(const nix_c_context * read_context)
      return read_context->last_err_code;
  }
  
@@ -81,10 +81,10 @@ index 4f65a4c12..551d48dcf 100644
  nix_err call_nix_get_string_callback(const std::string str, nix_get_string_callback callback, void * user_data)
  {
 diff --git a/src/libutil-c/nix_api_util.h b/src/libutil-c/nix_api_util.h
-index ad6f32859..c2140f2df 100644
+index 5f42641d4..64e01961f 100644
 --- a/src/libutil-c/nix_api_util.h
 +++ b/src/libutil-c/nix_api_util.h
-@@ -293,6 +293,10 @@ nix_err nix_err_code(const nix_c_context * read_context);
+@@ -295,6 +295,10 @@ nix_err nix_err_code(const nix_c_context * read_context);
   */
  nix_err nix_set_err_msg(nix_c_context * context, nix_err err, const char * msg);
  
@@ -93,5 +93,5 @@ index ad6f32859..c2140f2df 100644
 +char * sign_detached(const char * secret_key, const char * data);
 +
  /**
-  *  @}
-  */
+  * @brief Clear the error message from a nix context.
+  *

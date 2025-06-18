@@ -19,7 +19,8 @@
     (flake-utils.lib.eachSystem
       [
         "x86_64-linux"
-        "aarch64-linux"
+        # https://github.com/NixOS/nix/issues/13045
+        #"aarch64-linux"
       ]
       (
         system:
@@ -52,13 +53,7 @@
               pkgs.jq
               pkgs.rust-analyzer
               pkgs.openssl
-              (pkgs.nixVersions.git.overrideAttrs(a: {
-                # Should be generalized, documented, tested and upstreamed
-                # similar to https://github.com/NixOS/nix/pull/12044
-                patches = a.patches ++ [ ./utils/expose_apis.patch ];
-                # tests/functional/repl.sh.test is failing in CI
-                doInstallCheck = system == "x86_64-linux";
-              }))
+              (pkgs.callPackage ./utils/patched-nix {})
               pkgs.nlohmann_json
               pkgs.libsodium
               pkgs.boost
@@ -71,7 +66,6 @@
       )
     )
     // {
-
       nixosModules.hash-collection = import ./utils/nixos/module.nix queued-build-hook.nixosModules.queued-build-hook;
       nixosModules.hash-collection-server = import ./web/nixos/module.nix;
     };

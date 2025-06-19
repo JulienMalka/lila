@@ -38,10 +38,8 @@ in
       type = package;
       default = pkgs.python3.withPackages (ps: [
         ps.lila
-        ps.fastapi
         ps.uvicorn
         ps.psycopg2
-        ps.pydantic
       ]);
 
       example = literalExpression ''

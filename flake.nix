@@ -44,11 +44,13 @@
               pkg-config
             ];
             buildInputs = [
-              (pkgs.python3.withPackages (ps: [
+              (pkgs.python3.withPackages(ps: [
                 ps.fastapi
-                ps.uvicorn
-                ps.sqlalchemy
                 ps.pydantic
+                ps.sqlalchemy
+                ps.jinja2
+
+                ps.uvicorn
               ]))
               pkgs.jq
               pkgs.rust-analyzer

@@ -1,6 +1,7 @@
 {
   lib,
   buildPythonPackage,
+  jinja2,
   pydantic,
   fastapi,
   hatchling,
@@ -20,6 +21,7 @@ buildPythonPackage {
     fastapi
     pydantic
     sqlalchemy
+    jinja2
   ];
 
   meta = with lib; {

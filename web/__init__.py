@@ -1,9 +1,12 @@
 from collections import defaultdict
 import json
+import pathlib
 import random
 import typing as t
-from fastapi import Depends, FastAPI, Header, HTTPException, Response
+from fastapi import Depends, FastAPI, Header, HTTPException, Response, Request
 from fastapi.security.http import HTTPAuthorizationCredentials, HTTPBearer
+from fastapi.staticfiles import StaticFiles
+from fastapi.templating import Jinja2Templates
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
 
@@ -13,6 +16,10 @@ from .db import SessionLocal, engine
 models.Base.metadata.create_all(bind=engine)
 
 app = FastAPI()
+thispath = pathlib.Path(__file__).parent.resolve()
+app.mount("/static", StaticFiles(directory=str(thispath) + "/static"), name="static")
+
+templates = Jinja2Templates(directory=str(thispath) + "/templates")
 
 origins = [
     "http://localhost:8000",
@@ -159,7 +166,7 @@ def printtree(root, deps, results, cur_indent=0, seen=None):
               #result = result + "\n    " + d
   return result
 
-def htmltree(root, deps, results):
+def htmlview(root, deps, results):
   def icon(result):
       if result == "No builds":
           return "❔ "
@@ -173,6 +180,9 @@ def htmltree(root, deps, results):
           return "❌ "
       else:
           return ""
+
+  # Manually construction HTML for now,
+  # could be template-ified further
   def generatetree(root, seen):
     if root in seen:
       return f'<summary title="{root}">...</summary>'
@@ -193,93 +203,48 @@ def htmltree(root, deps, results):
                 result += "</details></li>"
     result = result + "</ul>"
     return result
-  tree = generatetree(root, {})
-  return '''
-  <html>
-  <head>
-    <style>
-      .tree{
-        --spacing : 1.5rem;
-        --radius  : 8px;
-      }
 
-      .tree li{
-        display      : block;
-        position     : relative;
-        padding-left : calc(2 * var(--spacing) - var(--radius) - 2px);
-      }
-      
-      .tree ul{
-        margin-left  : calc(var(--radius) - var(--spacing));
-        padding-left : 0;
-      }
-      
-      .tree ul li{
-        border-left : 2px solid #ddd;
-      }
-      
-      .tree ul li:last-child{
-        border-color : transparent;
-      }
-      
-      .tree ul li::before{
-        content      : '';
-        display      : block;
-        position     : absolute;
-        top          : calc(var(--spacing) / -2);
-        left         : -2px;
-        width        : calc(var(--spacing) + 2px);
-        height       : calc(var(--spacing) + 1px);
-        border       : solid #ddd;
-        border-width : 0 0 2px 2px;
-      }
-      
-      .tree summary{
-        display : block;
-        cursor  : pointer;
-      }
-      
-      .tree summary::marker,
-      .tree summary::-webkit-details-marker{
-        display : none;
-      }
-      
-      .tree summary:focus{
-        outline : none;
-      }
-      
-      .tree summary:focus-visible{
-        outline : 1px dotted #000;
-      }
-      
-      .tree li::after,
-      .tree summary::before{
-        content       : '';
-        display       : block;
-        position      : absolute;
-        top           : calc(var(--spacing) / 2 - var(--radius));
-        left          : calc(var(--spacing) - var(--radius) - 1px);
-        width         : calc(2 * var(--radius));
-        height        : calc(2 * var(--radius));
-        border-radius : 50%;
-        background    : #ddd;
-      }
-      
-    </style>
-  </head>
-  ''' + f'''
-  <body>
-    <ul class="tree">
-    <li>
-    {tree}
-    </li>
-    </ul>
-  </body>
-  </html>
-'''
+  def number_and_percentage(n: int, total: int) -> int:
+    return f"{n} ({str(100*n/total)[:4]}%)"
+
+  def generate_list(derivations: list) -> dict:
+      return { d: {
+                    "name": d[44:],
+                    "link": f"/attestations/by-output/{d[11:]}",
+                  } for d in derivations }
+
+  def generate_lists():
+    resultsbytype = defaultdict(list)
+    for drv in results:
+        resultsbytype[results[drv]].append(drv)
+    n_not_reproducible = number_and_percentage(
+        len(resultsbytype["Consistently nondeterministic"]) + len(resultsbytype["Partially reproduced"]),
+        len(results)
+      )
+    not_reproducible = generate_list(resultsbytype["Consistently nondeterministic"] + resultsbytype["Partially reproduced"])
+    n_not_checked = number_and_percentage(
+        len(resultsbytype["No builds"]) + len(resultsbytype["One build"]),
+        len(results)
+      )
+    not_checked_one_build = generate_list(resultsbytype["One build"])
+    not_checked_no_builds = generate_list(resultsbytype["No builds"])
+    return n_not_reproducible, not_reproducible, n_not_checked, not_checked_one_build, not_checked_no_builds
+
+  not_reproducible_n, not_reproducible, not_checked_n, not_checked_one_build, not_checked_no_builds = generate_lists()
+
+  return {
+    "title": root[44:],
+    "not_reproducible_n": not_reproducible_n,
+    "not_reproducible": not_reproducible,
+    "not_checked_n": not_checked_n,
+    "not_checked_one_build": not_checked_one_build,
+    "not_checked_no_builds": not_checked_no_builds,
+    "tree": generatetree(root, {}),
+  }
 
 @app.get("/reports/{name}")
-def report(
+async def report(
+    request: Request,
     name: str,
     accept: t.Optional[str] = Header(default="*/*"),
     db: Session = Depends(get_db),
@@ -299,9 +264,9 @@ def report(
     results = crud.path_summaries(db, paths)
 
     if 'text/html' in accept:
-        return Response(
-            content=htmltree(root, report['dependencies'], results),
-            media_type='text/html')
+        return templates.TemplateResponse(
+            request = request, name="report.html", context=htmlview(root, report['dependencies'], results)
+        )
     else:
         return Response(
             content=printtree(root, report['dependencies'], results),

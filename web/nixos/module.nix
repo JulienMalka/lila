@@ -135,7 +135,6 @@ in
       script = "uvicorn lila:app --host 127.0.0.1 --port ${builtins.toString cfg.port}";
       serviceConfig = {
         User = "lila";
-        DynamicUser = true;
       };
       wantedBy = [ "multi-user.target" ];
       wants = [ "postgresql.target" ];
@@ -144,5 +143,13 @@ in
         "postgresql.service"
       ];
     };
+    users.users = {
+      lila = {
+        description = "Lila Service";
+        group = "lila";
+        isSystemUser = true;
+      };
+    };
+    users.groups.lila = { };
   };
 }

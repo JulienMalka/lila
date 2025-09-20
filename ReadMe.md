@@ -89,6 +89,13 @@ $ ./rebuilder.sh
 This script is still very much WIP, and will enter an infinite loop retrying failed fetches.
 You can run multiple rebuilders in parallel.
 
+#### Defining links
+
+```
+$ export HASH_COLLECTION_TOKEN=XYX # your token
+$ curl -X POST -G http://127.0.0.1:8000/link_patterns --data-urlencode 'pattern=samba.*' --data-urlencode 'link=https://github.com/NixOS/nixpkgs/issues/303436' -H 'Authorization: Bearer $HASH_COLLECTION_TOKEN'
+```
+
 ## Related projects
 
 * [nix-reproducible-builds-report](https://codeberg.org/raboof/nix-reproducible-builds-report/) aka `r13y`, which generates the reports at [https://reproducible.nixos.org](https://reproducible.nixos.org). Ideally the [reporting](https://github.com/JulienMalka/nix-hash-collection/issues/9) feature can eventually replace the reports there.

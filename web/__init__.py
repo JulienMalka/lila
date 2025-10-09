@@ -323,9 +323,14 @@ def nix_cache_info(user_name: str,
     if len(attestations) == 0:
         raise HTTPException(status_code=404, detail="Not found")
     attestation = attestations[0]
+    derivation = db.query(models.Derivation).filter_by(id=attestation.drv_id).one_or_none()
+    if derivation == None:
+        deriver = ""
+    else:
+        deriver = f"Deriver: {derivation.drv_hash}.drv\n"
     return Response(content=f"""StorePath: /nix/store/{attestation.output_digest}-{attestation.output_name}
 URL: no
 NarHash: {attestation.output_hash}
 NarSize: 1
-Sig: {attestation.output_sig}
+{deriver}Sig: {attestation.output_sig}
 """, media_type="text/x-nix-narinfo")

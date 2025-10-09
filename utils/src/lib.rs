@@ -182,5 +182,5 @@ pub fn parse_store_path_digest(store_path: &str) -> &str {
     &store_path[11..43]
 }
 pub fn parse_store_path_name(store_path: &str) -> &str {
-    &store_path[45..]
+    &store_path[44..]
 }

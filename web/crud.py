@@ -19,7 +19,8 @@ def create_attestation(db: Session, drv_hash: str, output_hash_map: list[schemas
                 insert(models.Attestation)
                 .values(
                     {
-                        "output_path": item.output_path,
+                        "output_digest": item.output_digest,
+                        "output_name": item.output_name,
                         "user_id": user_id,
                         "drv_id": derivation.id,
                         "output_hash": item.output_hash,

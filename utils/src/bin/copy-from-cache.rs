@@ -3,13 +3,10 @@ use regex::Regex;
 use reqwest::Result;
 use std::env;
 
-pub fn parse_store_path_hash(store_path: &str) -> &str {
-    &store_path[11..43]
-}
-
-async fn fetch<'a>(out_path: &'a str) -> (String, OutputAttestation<'a>) {
-    let hash = parse_store_path_hash(out_path);
-    let response = reqwest::get(format!("https://cache.nixos.org/{0}.narinfo", hash))
+async fn fetch<'a>(cache_url: &'a str, out_path: &'a str) -> (String, OutputAttestation<'a>) {
+    let out_digest = parse_store_path_digest(out_path);
+    let out_name = parse_store_path_name(out_path);
+    let response = reqwest::get(format!("{0}/{1}.narinfo", cache_url, out_digest))
         .await.expect("Fetching the narinfo")
         .text()
         .await.expect("Fetching the response body");
@@ -38,7 +35,8 @@ async fn fetch<'a>(out_path: &'a str) -> (String, OutputAttestation<'a>) {
     (
         deriver,
         OutputAttestation {
-            output_path: out_path,
+            output_digest: &out_digest,
+            output_name: &out_name,
             output_hash: nar_hash,
             output_sig: sig,
         }

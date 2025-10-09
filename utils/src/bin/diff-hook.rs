@@ -11,6 +11,9 @@ async fn main() -> Result<()> {
     let drv_path = read_env_var_or_panic("DRV_PATH");
     let drv_ident = parse_drv_hash(&drv_path);
 
+    let out_digest = parse_store_path_digest(&out_path);
+    let out_name = parse_store_path_name(&out_path);
+
     let hash = format!("sha256:{0}", my_hash_path(rebuild_path));
 
     println!(
@@ -24,7 +27,8 @@ async fn main() -> Result<()> {
 
     let output_attestations: Vec<_> = vec![
         OutputAttestation {
-            output_path: &out_path,
+            output_digest: &out_digest,
+            output_name: &out_name,
             output_hash: hash,
             output_sig: signature
         }

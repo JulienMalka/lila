@@ -48,9 +48,13 @@ async fn main() -> Result<()> {
     // TODO maybe move those to a config file?
     let token = read_env_var_or_panic("HASH_COLLECTION_TOKEN");
     let collection_server = read_env_var_or_panic("HASH_COLLECTION_SERVER");
+    let cache_server = match env::var("CACHE_URL") {
+        Ok(val) => val,
+        Err(_) => "https://cache.nixos.org".to_string(),
+    };
     let args: Vec<String> = env::args().collect();
     let out_path = &args[1];
-    let (drv_ident, output) = fetch(&out_path).await;
+    let (drv_ident, output) = fetch(&cache_server, &out_path).await;
 
     post(&collection_server, &token, &drv_ident, &Vec::from([output])).await?;
     Ok(())

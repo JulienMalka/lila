@@ -93,7 +93,7 @@ You can run multiple rebuilders in parallel.
 
 ```
 $ export HASH_COLLECTION_TOKEN=XYX # your token
-$ curl -X POST -G http://127.0.0.1:8000/link_patterns --data-urlencode 'pattern=samba.*' --data-urlencode 'link=https://github.com/NixOS/nixpkgs/issues/303436' -H 'Authorization: Bearer $HASH_COLLECTION_TOKEN'
+$ curl -X POST -G http://127.0.0.1:8000/link_patterns --data-urlencode 'pattern=samba.*' --data-urlencode 'link=https://github.com/NixOS/nixpkgs/issues/303436' -H "Authorization: Bearer $HASH_COLLECTION_TOKEN"
 ```
 
 ## Related projects

@@ -1,7 +1,14 @@
 import json
+import os
 
 from sqlalchemy import distinct, func, select, values
-from sqlalchemy.dialects.sqlite import insert
+if os.environ['SQLALCHEMY_DATABASE_URL'] and 'postgres' in os.environ['SQLALCHEMY_DATABASE_URL']:
+    print("Using postgres dialect")
+    from sqlalchemy.dialects.postgresql import insert
+else:
+    print("Using sqlite dialect")
+    from sqlalchemy.dialects.sqlite import insert
+
 from sqlalchemy.orm import Session
 from sqlalchemy.sql.functions import user
 

@@ -13,7 +13,8 @@ while true; do
       (nix derivation show $out || exit 1) | jq keys.[] | tr -d \" | while read drv
       do
 	  # TODO select the right output to rebuild?
-          nix-build $drv --check
+	  # for now just build them all:
+          nix build "$drv^*" --rebuild
       done
   done
 done

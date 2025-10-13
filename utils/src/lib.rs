@@ -138,7 +138,8 @@ pub fn my_sign_detached(secret_key: &str, data: String) -> String {
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct OutputAttestation<'a> {
-    pub output_path: &'a str,
+    pub output_digest: &'a str,
+    pub output_name: &'a str,
     pub output_hash: String,
     pub output_sig: String,
 }
@@ -175,4 +176,11 @@ pub async fn post(collection_server: &str, token: &str, drv_ident: &str, output_
         .send()
         .await?;
     Ok(())
+}
+
+pub fn parse_store_path_digest(store_path: &str) -> &str {
+    &store_path[11..43]
+}
+pub fn parse_store_path_name(store_path: &str) -> &str {
+    &store_path[44..]
 }

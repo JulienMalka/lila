@@ -5,7 +5,7 @@ from typing import List
 
 from sqlalchemy import (Column, DateTime, ForeignKey, Integer, Table,
                         UniqueConstraint, func)
-from sqlalchemy.orm import Mapped, mapped_column, relationship
+from sqlalchemy.orm import Mapped, column_property, mapped_column, relationship
 
 from .db import Base
 
@@ -67,10 +67,15 @@ class Attestation(Base):
     __tablename__ = "attestations"
 
     id: Mapped[int] = mapped_column(primary_key=True)
-    output_path: Mapped[str] = mapped_column()
+    # identification
+    output_digest: Mapped[str] = mapped_column()
+    output_name: Mapped[str] = mapped_column()
+    output_path = column_property("/nix/store/" + output_digest + "-" + output_name)
+    # metadata
     user_id: Mapped[int] = mapped_column(ForeignKey("users.id"))
     drv_id: Mapped[str] = mapped_column(ForeignKey("derivations.id"))
     derivation: Mapped["Derivation"] = relationship(back_populates="attestations")
+    # data
     output_hash: Mapped[str] = mapped_column()
     output_sig: Mapped[str] = mapped_column()
 

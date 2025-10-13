@@ -6,7 +6,8 @@ class ReportLink(BaseModel):
     link: str
 
 class OutputHashPair(BaseModel):
-    output_path: str
+    output_digest: str
+    output_name: str
     output_hash: str
     output_sig: str
 

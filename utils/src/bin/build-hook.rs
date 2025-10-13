@@ -19,12 +19,15 @@ async fn main() -> Result<()> {
     let output_attestations: Vec<_> = out_paths
         .split(" ")
         .map(|path| -> OutputAttestation {
+            let digest = parse_store_path_digest(path);
+            let name = parse_store_path_name(path);
             let hash = nar_hash(ctx, path.to_string());
             let size = nar_size(ctx, path.to_string());
             let fingerprint = fingerprint(ctx, path, &hash, size);
             let signature = my_sign_detached(secret_key.as_str(), fingerprint);
             return OutputAttestation {
-                output_path: path,
+                output_digest: &digest,
+                output_name: &name,
                 output_hash: hash,
                 output_sig: signature
             }

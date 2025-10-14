@@ -2,10 +2,10 @@ lila
 ===============================
 ## Introduction
 
-This repository aims to give a set of tools that can be used to create a hash collection mechanism for Nix. 
+This repository aims to give a set of tools that can be used to create a hash collection mechanism for Nix.
 A hash collection infrastructure is used to collect and compare build outputs from different trusted builders.
 
-This project is composed of two parts: 
+This project is composed of two parts:
 
 1) A post-build-hook, that his a software running after each of Nix builds and in charge to report the hashes of the outputs
 2) A server to aggregate the results
@@ -25,7 +25,7 @@ Set up your keys with:
 Hashes reports are only allowed from trusted users, which are identified via a token.
 To generate a token run `./create_user "username"`
 
-#### Run the server 
+#### Run the server
 
 Run the server with `uvicorn web:app --reload`
 
@@ -48,14 +48,42 @@ grow support for build-time closures as well.
 
 #### Defining a report
 
-You define a report by uploading a JSON CycloneDX SBOM as produced by
-[nix-runtime-tree-to-sbom](https://codeberg.org/raboof/nix-runtime-tree-to-sbom):
+##### Runtime reports
+
+You define a report of a derivations' runtime dependencies by uploading a JSON CycloneDX SBOM as produced by
+[nix-runtime-tree-to-sbom](https://codeberg.org/raboof/nix-runtime-tree-to-sbom).
+
+Creating reports like this relies on Nix's built-in mechanism for
+[determining runtime references](https://nix.dev/manual/nix/2.32/store/building.html#processing-outputs).
+This may under-count the builds that are 'interesting' to rebuild, as it
+will not rebuild derivations whose output is copied into a runtime
+dependency. This means it gives good signal-to-noise ratio, but it remains
+important to do 'actual' clean-room rebuilds to gain additional confidence.
+
+###### Runtime report of an arbitrary derivation
 
 ```
-$ nix-store -q --tree $(nix-build '<nixpkgs/nixos/release-combined.nix>' -A nixos.iso_gnome.x86_64-linux) > tree.txt
-$ cat tree.txt | ~/dev/nix-runtime-tree-to-sbom/tree-to-cyclonedx.py > sbom.cdx.json
+$ nix-store -q --tree $(nix-build '<nixpkgs>' -A diffoscope) > tree.txt
+$ cat tree.txt | nix run git+https://codeberg.org/raboof/nix-runtime-tree-to-sbom --no-write-lock-file > sbom.cdx.json
 $ export HASH_COLLECTION_TOKEN=XYX # your token
-$ curl -X PUT --data @sbom.cdx.json "http://localhost:8000/reports/gnome-iso-runtime" -H "Content-Type: application/json" -H "Authorization: Bearer $HASH_COLLECTION_TOKEN"
+$ curl -X PUT --data @sbom.cdx.json "http://localhost:8000/reports/diffoscope" -H "Content-Type: application/json" -H "Authorization: Bearer $HASH_COLLECTION_TOKEN"
+```
+
+###### Runtime report of an installation ISO
+
+Because the derivations that are part of the ISO are copied into the
+ISO, they [no longer](https://github.com/NixOS/nixpkgs/pull/425700) show
+up as runtime dependencies. To get a report for the derivations that go into
+a given installation ISO:
+
+Check out a 'clean' checkout of nixpkgs, notably not containing any files that would be ignored by git (you can check with `git status --ignored`) or empty directories (you can check with `find . -type d -empty`).
+
+```
+$ cd /path/to/nixpkgs
+$ nix-store -q --tree $(nix-build /path/to/lila/installation-iso-store-contents.nix --argstr nixpkgs-under-test $(pwd) --argstr version $(cat lib/.version) --argstr revCount $(git rev-list $(git log -1 --pretty=format:%h) | wc -l) --argstr shortRev $(git log -1 --pretty=format:%h) --argstr rev $(git rev-parse HEAD) --no-out-link) > tree.txt
+$ cat tree.txt | nix run git+https://codeberg.org/raboof/nix-runtime-tree-to-sbom --no-write-lock-file > sbom.cdx.json
+$ export HASH_COLLECTION_TOKEN=XYX # your token
+$ curl -X PUT --data @sbom.cdx.json "http://localhost:8000/reports/nixos-graphical-25.11pre873798.c9b6fb798541-x86_64-linux.iso" -H "Content-Type: application/json" -H "Authorization: Bearer $HASH_COLLECTION_TOKEN"
 ```
 
 #### Populating the report

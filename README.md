@@ -42,9 +42,17 @@ Run the server with `uvicorn web:app --reload`
 
 ### Reporting
 
-At the time of writing only reports on run-time closures are supported.
-Reporting is experimental and still expected to evolve, change, and
-grow support for build-time closures as well.
+Below are instructions for defining and populating reports.
+
+Run-time reports have the highest signal-to-noise ratio, as they only
+include output paths that actually show up in the resulting artefact.
+These may however miss artifacts that are copied from a build-time
+dependency into the runtime.
+
+Reports of the build-time closure will also include those - but also
+derivations that are only 'used' during the build process and whose
+output does not appear in the resulting artifact - such as tools only
+used during the 'check' phase.
 
 #### Defining a report
 
@@ -84,6 +92,14 @@ $ nix-store -q --tree $(nix-build /path/to/lila/installation-iso-store-contents.
 $ cat tree.txt | nix run git+https://codeberg.org/raboof/nix-runtime-tree-to-sbom --no-write-lock-file > sbom.cdx.json
 $ export HASH_COLLECTION_TOKEN=XYX # your token
 $ curl -X PUT --data @sbom.cdx.json "http://localhost:8000/reports/nixos-graphical-25.11pre873798.c9b6fb798541-x86_64-linux.iso" -H "Content-Type: application/json" -H "Authorization: Bearer $HASH_COLLECTION_TOKEN"
+```
+
+##### Report for the build-time closure
+
+```
+$ nix run git+https://codeberg.org/raboof/nix-build-sbom --no-write-lock-file -- /nix/store/123-some-derivation.drv --skip-without-deriver > sbom.cdx.json
+$ export HASH_COLLECTION_TOKEN=XYX # your token
+$ curl -X PUT --data @sbom.cdx.json "http://localhost:8000/reports/123-some-derivation.drv-build-closure" -H "Content-Type: application/json" -H "Authorization: Bearer $HASH_COLLECTION_TOKEN"
 ```
 
 #### Populating the report

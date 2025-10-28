@@ -79,17 +79,17 @@
   </p>
   <h2>Not reproducible: {{not_reproducible_n}}</h2>
   <p>
-    {% set items = not_reproducible.items() %}
+    {% set groups = not_reproducible %}
     {% include 'list.html' %}
   </p>
   <h2>Not fully checked: {{not_checked_n}}</h2>
   <p>
     One build (rebuild possibly failed or still in progress):
-    {% set items = not_checked_one_build.items() %}
+    {% set groups = not_checked_one_build %}
     {% include 'list.html' %}
 
     No builds (likely <a href='https://github.com/JulienMalka/lila/issues/39'>incorrectly reported</a>):
-    {% set items = not_checked_no_builds.items() %}
+    {% set groups = not_checked_no_builds %}
     {% include 'list.html' %}
   </p>
   <h2>Tree view:</h2>

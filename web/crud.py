@@ -2,7 +2,7 @@ import json
 import os
 
 from sqlalchemy import distinct, func, select, values
-if os.environ['SQLALCHEMY_DATABASE_URL'] and 'postgres' in os.environ['SQLALCHEMY_DATABASE_URL']:
+if 'SQLALCHEMY_DATABASE_URL' in os.environ and 'postgres' in os.environ['SQLALCHEMY_DATABASE_URL']:
     print("Using postgres dialect")
     from sqlalchemy.dialects.postgresql import insert
 else:

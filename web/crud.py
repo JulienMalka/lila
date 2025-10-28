@@ -42,7 +42,7 @@ def report(db: Session, name: str):
         return None
     return json.loads(r.definition)
 
-def suggest(db: Session, paths, user_id):
+def suggest(db: Session, elements, user_id):
     # Derivations in the database might not match derivations on the rebuilder system.
     # TODO: can this happen only for FODs or also for other derivations?
     # TODO: Add enough metadata to the report so you know what to nix-instantiate to get all relevant drvs
@@ -51,7 +51,7 @@ def suggest(db: Session, paths, user_id):
     #suggestions = []
     #for row in db.execute(stmt):
     #    suggestions.append(row._mapping['drv_hash'])
-    candidates = paths
+    candidates = list(elements.keys())
     if user:
         for attestation in db.query(models.Attestation).filter(models.Attestation.output_path.in_(candidates)).filter_by(user_id=user_id).all():
             if attestation.output_path in candidates:
@@ -61,7 +61,7 @@ def suggest(db: Session, paths, user_id):
     stmt = select(models.Attestation.output_path).where(models.Attestation.output_path.in_(candidates)).group_by(models.Attestation.output_path).having(func.count(models.Attestation.id) > 1)
     for row in db.execute(stmt):
         candidates.remove(row._mapping['output_path'])
-    return candidates
+    return { candidate: elements[candidate] for candidate in candidates }
 
 # TODO ideally this should take into account derivation paths as well as
 # output paths, as for example for a fixed-output derivation we'd want

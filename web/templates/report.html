@@ -103,6 +103,9 @@
     <ul>
     {% for key, values in not_checked_no_builds.items() %}
       <li><a href="{{values['link']}}">{{values['name']}}</a>
+      {% for link in values['external_links'] %}
+        <a class='extlink' target='_blank' href='{{link}}'>🔗</a>
+      {% endfor %}
     {% endfor %}
     </ul>
   </p>

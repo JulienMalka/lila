@@ -95,7 +95,7 @@ def get_drv(drv_hash: str,
 def get_drv_recap(drv_hash: str, db: Session = Depends(get_db)) -> schemas.DerivationAttestation:
     return get_drv_recap_or_404(db, drv_hash)
 
-# Suggested rebuilds
+# Suggested rebuilds - deprecated API
 @app.get("/reports/{name}/suggested")
 def derivations_suggested_for_rebuilding(
     name: str,
@@ -105,12 +105,30 @@ def derivations_suggested_for_rebuilding(
     report = crud.report(db, name)
     if report == None:
         raise HTTPException(status_code=404, detail="Report not found")
-    paths = report_out_paths(report)
+    elements = report_elements(report)
 
     user = crud.get_user_with_token(db, token)
-    suggestions = crud.suggest(db, paths, user)
+    suggestions = list(crud.suggest(db, elements, user).keys())
     random.shuffle(suggestions)
     return suggestions[:50]
+
+# Suggested rebuilds
+@app.get("/reports/{name}/suggest")
+def suggest_derivations_for_rebuilding(
+    name: str,
+    token: str = Depends(get_token),
+    db: Session = Depends(get_db),
+):
+    report = crud.report(db, name)
+    if report == None:
+        raise HTTPException(status_code=404, detail="Report not found")
+    elements = report_elements(report)
+
+    user = crud.get_user_with_token(db, token)
+    suggestions = list(crud.suggest(db, elements, user).values())
+    random.shuffle(suggestions)
+    return suggestions[:50]
+
 
 @app.post("/attestation/{drv_hash}")
 def record_attestation(
@@ -138,6 +156,23 @@ def report_out_paths(report):
         for prop in component['properties']:
             if prop['name'] == "nix:out_path":
                 paths.append(prop['value'])
+    return paths
+
+def report_elements(report):
+    paths = {}
+    for component in report['components']:
+        item = {}
+        for prop in component['properties']:
+            if prop['name'] == "nix:out_path":
+                item['out_path'] = prop['value']
+            elif prop['name'] == "nix:output_path":
+                item['out_path'] = prop['value']
+            elif prop['name'] == "nix:drv_path":
+                item['drv_path'] = prop['value']
+            elif prop['name'] == "nix:output":
+                item['output'] = prop['value']
+        if 'out_path' in item:
+            paths[item['out_path']] = item
     return paths
 
 @app.get("/reports")

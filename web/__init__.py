@@ -269,6 +269,7 @@ def htmlview(root, deps, results, link_patterns):
       for link in multi(all_links):
           groups[link] = {
             'label': link,
+            'link': link,
             'items': [],
           }
 

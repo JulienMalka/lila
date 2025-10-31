@@ -247,12 +247,45 @@ def htmlview(root, deps, results, link_patterns):
       name = derivation[44:]
       return [ lp.link for lp in link_patterns if re.match(lp.pattern, name) ]
 
+  def multi(lists: list) -> list:
+      seen_once = []
+      seen_multi = []
+      for l in lists:
+          for i in l:
+              if not i in seen_multi:
+                  if i in seen_once:
+                      seen_multi.append(i)
+                  else:
+                      seen_once.append(i)
+      return seen_multi
+
   def generate_list(derivations: list) -> dict:
-      return { d: {
-                    "name": d[44:],
-                    "link": f"/attestations/by-output/{d[11:]}",
-                    "external_links": external_links(d)
-                  } for d in derivations }
+      all_links = [ external_links(d) for d in derivations ]
+      groups = { }
+      groups[""] = {
+        'label': "",
+        'items': [],
+      }
+      for link in multi(all_links):
+          groups[link] = {
+            'label': link,
+            'items': [],
+          }
+
+      for d in derivations:
+          links = external_links(d)
+          item = {
+            "name": d[44:],
+            "drv": d,
+            "link": f"/attestations/by-output/{d[11:]}",
+            "external_links": links,
+          }
+          if links and links[0] in groups:
+              groups[links[0]]['items'].append(item)
+          else:
+              groups[""]['items'].append(item)
+
+      return groups
 
   def generate_lists():
     resultsbytype = defaultdict(list)

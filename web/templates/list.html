@@ -1,0 +1,15 @@
+{% for link, group in groups.items() %}
+<p>
+  {% if group.label %}
+  Affected by <a href="{{group.link}}">{{ group.label }}</a>:
+  {% endif %}
+  <ul>
+  {% for values in group['items'] %}
+    <li><a href="{{values['link']}}">{{values['name']}}</a>
+    {% for link in values['external_links'] %}
+      <a class='extlink' target='_blank' href='{{link}}'>🔗</a>
+    {% endfor %}
+  {% endfor %}
+  </ul>
+</p>
+{% endfor %}

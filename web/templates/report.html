@@ -79,32 +79,18 @@
   </p>
   <h2>Not reproducible: {{not_reproducible_n}}</h2>
   <p>
-    <ul>
-    {% for key, values in not_reproducible.items() %}
-      <li><a href="{{values['link']}}">{{values['name']}}</a>
-      {% for link in values['external_links'] %}
-        <a class='extlink' target='_blank' href='{{link}}'>🔗</a>
-      {% endfor %}
-    {% endfor %}
-    </ul>
+    {% set groups = not_reproducible %}
+    {% include 'list.html' %}
   </p>
   <h2>Not fully checked: {{not_checked_n}}</h2>
   <p>
     One build (rebuild possibly failed or still in progress):
-    <ul>
-    {% for key, values in not_checked_one_build.items() %}
-      <li><a href="{{values['link']}}">{{values['name']}}</a>
-      {% for link in values['external_links'] %}
-        <a class='extlink' target='_blank' href='{{link}}'>🔗</a>
-      {% endfor %}
-    {% endfor %}
-    </ul>
+    {% set groups = not_checked_one_build %}
+    {% include 'list.html' %}
+
     No builds (likely <a href='https://github.com/JulienMalka/lila/issues/39'>incorrectly reported</a>):
-    <ul>
-    {% for key, values in not_checked_no_builds.items() %}
-      <li><a href="{{values['link']}}">{{values['name']}}</a>
-    {% endfor %}
-    </ul>
+    {% set groups = not_checked_no_builds %}
+    {% include 'list.html' %}
   </p>
   <h2>Tree view:</h2>
   <ul class="tree">

@@ -12,7 +12,7 @@ use std::ffi::{CStr,CString};
 // when we do that we should also make other improvements such
 // as considering to use rust-bindgen etc, for now keep things
 // as simple as possible
-pub type err = ::std::os::raw::c_int;
+pub type Err = ::std::os::raw::c_int;
 #[repr(C)]
 #[derive(Debug, Copy, Clone)]
 pub struct c_context {
@@ -29,11 +29,10 @@ pub struct StorePath {
     _unused: [u8; 0],
 }
 #[link(name = "nixstorec")]
-extern {
+extern "C" {
     fn nix_c_context_create() -> *mut c_context;
-    fn nix_c_context_free() -> *mut c_context;
 
-    fn nix_libstore_init(context: *mut c_context) -> err;
+    fn nix_libstore_init(context: *mut c_context) -> Err;
     fn nix_store_open(
         context: *mut c_context,
         uri: *const ::std::os::raw::c_char,
@@ -45,13 +44,12 @@ extern {
         path: *const c_char,
     ) -> *mut StorePath;
     fn nix_store_path_free(p: *mut StorePath);
-    fn nix_store_free(store: *mut Store);
     fn nix_store_path_nar_hash(store: *mut Store, store_path: *const StorePath) -> *mut c_char;
     fn nix_store_path_nar_size(store: *mut Store, store_path: *const StorePath) -> u64;
     fn nix_store_path_references(store: *mut Store, store_path: *const StorePath) -> *mut *mut c_char;
 }
 #[link(name = "nixutilc")]
-extern {
+extern "C" {
     fn hash_path(input: *const c_char) -> *mut c_char;
     fn sign_detached(secret_key: *const c_char, data: *const c_char) -> *mut c_char;
 }

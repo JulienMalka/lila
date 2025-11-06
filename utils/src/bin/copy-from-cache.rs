@@ -1,12 +1,15 @@
 use nix_hash_collection_utils::*;
 use regex::Regex;
-use reqwest::Result;
+use reqwest::{Client, Result};
 use std::env;
 
-async fn fetch<'a>(cache_url: &'a str, out_path: &'a str) -> OutputAttestation<'a> {
+async fn fetch<'a>(client: &'a Client, cache_url: &'a str, out_path: &'a str) -> OutputAttestation<'a> {
     let out_digest = parse_store_path_digest(out_path);
     let out_name = parse_store_path_name(out_path);
-    let response = reqwest::get(format!("{0}/{1}.narinfo", cache_url, out_digest))
+
+    let response = client
+        .get(format!("{0}/{1}.narinfo", cache_url, out_digest))
+        .send()
         .await.expect("Fetching the narinfo")
         .text()
         .await.expect("Fetching the response body");
@@ -53,8 +56,13 @@ async fn main() -> Result<()> {
     let out_path = &args[1];
     // The deriver identification, i.e. without '/nix/store', under which to file this out path
     let drv_ident = &args[2];
-    let output = fetch(&cache_server, &out_path).await;
 
-    post(&collection_server, &token, &drv_ident, &Vec::from([output])).await?;
+    let client = Client::builder()
+        .user_agent("lila/1.0")
+        .build()?;
+
+    let output = fetch(&client, &cache_server, &out_path).await;
+    post(&client, &collection_server, &token, &drv_ident, &Vec::from([output])).await?;
+
     Ok(())
 }

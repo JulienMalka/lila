@@ -72,7 +72,7 @@ important to do 'actual' clean-room rebuilds to gain additional confidence.
 
 ```
 $ nix-store -q --tree $(nix-build '<nixpkgs>' -A diffoscope) > tree.txt
-$ cat tree.txt | nix run git+https://codeberg.org/raboof/nix-runtime-tree-to-sbom --no-write-lock-file > sbom.cdx.json
+$ cat tree.txt | nix run git+https://codeberg.org/raboof/nix-runtime-tree-to-sbom --no-write-lock-file -- --skip-without-deriver > sbom.cdx.json
 $ export HASH_COLLECTION_TOKEN=XYX # your token
 $ curl -X PUT --data @sbom.cdx.json "http://localhost:8000/reports/diffoscope" -H "Content-Type: application/json" -H "Authorization: Bearer $HASH_COLLECTION_TOKEN"
 ```
@@ -89,7 +89,7 @@ Check out a 'clean' checkout of nixpkgs, notably not containing any files that w
 ```
 $ cd /path/to/nixpkgs
 $ nix-store -q --tree $(nix-build /path/to/lila/installation-iso-store-contents.nix --argstr nixpkgs-under-test $(pwd) --argstr version $(cat lib/.version) --argstr revCount $(git rev-list $(git log -1 --pretty=format:%h) | wc -l) --argstr shortRev $(git log -1 --pretty=format:%h) --argstr rev $(git rev-parse HEAD) --no-out-link) > tree.txt
-$ cat tree.txt | nix run git+https://codeberg.org/raboof/nix-runtime-tree-to-sbom --no-write-lock-file > sbom.cdx.json
+$ cat tree.txt | nix run git+https://codeberg.org/raboof/nix-runtime-tree-to-sbom --no-write-lock-file -- --skip-without-deriver > sbom.cdx.json
 $ export HASH_COLLECTION_TOKEN=XYX # your token
 $ curl -X PUT --data @sbom.cdx.json "http://localhost:8000/reports/nixos-graphical-25.11pre873798.c9b6fb798541-x86_64-linux.iso" -H "Content-Type: application/json" -H "Authorization: Bearer $HASH_COLLECTION_TOKEN"
 ```

@@ -56,6 +56,15 @@ used during the 'check' phase.
 
 #### Defining a report
 
+##### Build-time closure reports
+
+```
+$ DRV_PATH=$(nix-instantiate '<nixpkgs>' -A diffoscope)
+$ nix run git+https://codeberg.org/raboof/nix-build-sbom --no-write-lock-file -- $DRV_PATH --skip-without-deriver > build-closure-sbom.cdx.json
+$ export HASH_COLLECTION_TOKEN=XYX # your token
+$ curl -X PUT --data @build-closure-sbom.cdx.json "http://localhost:8000/reports/123-some-derivation.drv-build-closure" -H "Content-Type: application/json" -H "Authorization: Bearer $HASH_COLLECTION_TOKEN"
+```
+
 ##### Runtime reports
 
 You define a report of a derivations' runtime dependencies by uploading a JSON CycloneDX SBOM as produced by
@@ -71,10 +80,12 @@ important to do 'actual' clean-room rebuilds to gain additional confidence.
 ###### Runtime report of an arbitrary derivation
 
 ```
-$ nix-store -q --tree $(nix-build '<nixpkgs>' -A diffoscope) > tree.txt
-$ cat tree.txt | nix run git+https://codeberg.org/raboof/nix-runtime-tree-to-sbom --no-write-lock-file -- --skip-without-deriver > sbom.cdx.json
+$ DRV_PATH=$(nix-instantiate '<nixpkgs>' -A diffoscope)
+$ nix run git+https://codeberg.org/raboof/nix-build-sbom --no-write-lock-file -- $DRV_PATH --skip-without-deriver --include-outputs all > /tmp/build-closure-sbom.cdx.json
+$ nix-store -q --tree $(nix-build '<nixpkgs>' -A diffoscope) > /tmp/tree.txt
+$ cat /tmp/tree.txt | nix run git+https://codeberg.org/raboof/nix-runtime-tree-to-sbom --no-write-lock-file -- --skip-without-deriver --include-drv-paths-from /tmp/build-closure-sbom.cdx.json > /tmp/sbom.cdx.json
 $ export HASH_COLLECTION_TOKEN=XYX # your token
-$ curl -X PUT --data @sbom.cdx.json "http://localhost:8000/reports/diffoscope" -H "Content-Type: application/json" -H "Authorization: Bearer $HASH_COLLECTION_TOKEN"
+$ curl -X PUT --data @/tmp/sbom.cdx.json "http://localhost:8000/reports/diffoscope-runtime" -H "Content-Type: application/json" -H "Authorization: Bearer $HASH_COLLECTION_TOKEN"
 ```
 
 ###### Runtime report of an installation ISO
@@ -88,18 +99,13 @@ Check out a 'clean' checkout of nixpkgs, notably not containing any files that w
 
 ```
 $ cd /path/to/nixpkgs
-$ nix-store -q --tree $(nix-build /path/to/lila/installation-iso-store-contents.nix --argstr nixpkgs-under-test $(pwd) --argstr version $(cat lib/.version) --argstr revCount $(git rev-list $(git log -1 --pretty=format:%h) | wc -l) --argstr shortRev $(git log -1 --pretty=format:%h) --argstr rev $(git rev-parse HEAD) --no-out-link) > tree.txt
-$ cat tree.txt | nix run git+https://codeberg.org/raboof/nix-runtime-tree-to-sbom --no-write-lock-file -- --skip-without-deriver > sbom.cdx.json
+$ DRV_PATH=$(nix-instantiate /path/to/lila/installation-iso-store-contents.nix --argstr nixpkgs-under-test $(pwd) --argstr version $(cat lib/.version) --argstr revCount $(git rev-list $(git log -1 --pretty=format:%h) | wc -l) --argstr shortRev $(git log -1 --pretty=format:%h) --argstr rev $(git rev-parse HEAD))
+$ nix run git+https://codeberg.org/raboof/nix-build-sbom --no-write-lock-file -- $DRV_PATH --skip-without-deriver --include-outputs all > /tmp/build-closure-sbom.cdx.json
+$ OUT_PATH=$(nix-build $DRV_PATH)
+$ nix-store -q --tree $OUT_PATH > /tmp/tree.txt
+$ cat /tmp/tree.txt | nix run git+https://codeberg.org/raboof/nix-runtime-tree-to-sbom --no-write-lock-file -- --skip-without-deriver --include-drv-paths-from /tmp/build-closure-sbom.cdx.json > /tmp/sbom.cdx.json
 $ export HASH_COLLECTION_TOKEN=XYX # your token
-$ curl -X PUT --data @sbom.cdx.json "http://localhost:8000/reports/nixos-graphical-25.11pre873798.c9b6fb798541-x86_64-linux.iso" -H "Content-Type: application/json" -H "Authorization: Bearer $HASH_COLLECTION_TOKEN"
-```
-
-##### Report for the build-time closure
-
-```
-$ nix run git+https://codeberg.org/raboof/nix-build-sbom --no-write-lock-file -- /nix/store/123-some-derivation.drv --skip-without-deriver > sbom.cdx.json
-$ export HASH_COLLECTION_TOKEN=XYX # your token
-$ curl -X PUT --data @sbom.cdx.json "http://localhost:8000/reports/123-some-derivation.drv-build-closure" -H "Content-Type: application/json" -H "Authorization: Bearer $HASH_COLLECTION_TOKEN"
+$ curl -X PUT --data @/tmp/sbom.cdx.json "http://localhost:8000/reports/nixos-graphical-25.11pre873798.c9b6fb798541-x86_64-linux.iso-runtime" -H "Content-Type: application/json" -H "Authorization: Bearer $HASH_COLLECTION_TOKEN"
 ```
 
 #### Populating the report

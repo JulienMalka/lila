@@ -1,9 +1,23 @@
 use nix_hash_collection_utils::*;
-use reqwest::{Client, Result};
+use reqwest::{Client,Result};
+use std::process::Command;
+use std::io::{self, Write};
 
-async fn perform_rebuild(s: SuggestedRebuild) -> Result<()> {
+fn perform_rebuild(ctx: Ctx, s: SuggestedRebuild) {
     println!("To rebuild: {} using {}^{}", s.out_path, s.drv_path, s.output);
-    Ok(())
+    let out = Command::new("nix")
+        .args(["build", format!("{}^{}", s.drv_path, s.output).as_str(), "--no-link"])
+        .output()
+        .expect("Failed to invoke 'nix build'");
+    println!("{}", out.status);
+    io::stdout().write_all(&out.stdout);
+    io::stdout().write_all(&out.stderr);
+    // TODO add to naughty list when status != 0, eventually: nix-instantiate
+    let out = Command::new("nix")
+        .args(["build", format!("{}^{}", s.drv_path, s.output).as_str(), "--rebuild", "--no-link"])
+        .output()
+        .expect("Failed to invoke 'nix build'");
+    println!("{}", out.status);
 }
 
 #[tokio::main]
@@ -17,8 +31,10 @@ async fn main() -> Result<()> {
         .build()?;
 
     let suggested = suggest(&client, &collection_server, &token, &report).await?;
+    let ctx = nix_init();
+    // TODO parallelize, refresh 'suggested' list periodically
     for item in suggested {
-        perform_rebuild(item).await?;
+        perform_rebuild(ctx, item);
     }
 
     Ok(())

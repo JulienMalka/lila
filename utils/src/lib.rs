@@ -1,5 +1,5 @@
 use regex::Regex;
-use reqwest::Result;
+use reqwest::{Client, Result};
 use serde::{Deserialize, Serialize};
 use std::env;
 use std::ptr::null;
@@ -167,8 +167,7 @@ pub fn fingerprint(ctx: Ctx, out_path: &str, nar_hash: &str, size: u64) -> Strin
     return fingerprint;
 }
 
-pub async fn post(collection_server: &str, token: &str, drv_ident: &str, output_attestations: &Vec<OutputAttestation<'_>>) -> Result<()> {
-    let client = reqwest::Client::new();
+pub async fn post(client: &Client, collection_server: &str, token: &str, drv_ident: &str, output_attestations: &Vec<OutputAttestation<'_>>) -> Result<()> {
     client
         .post(format!("{0}/attestation/{1}", collection_server, drv_ident))
         .bearer_auth(token)

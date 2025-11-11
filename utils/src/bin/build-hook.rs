@@ -1,5 +1,5 @@
 use nix_hash_collection_utils::*;
-use reqwest::Result;
+use reqwest::{Client, Result};
 
 #[tokio::main]
 async fn main() -> Result<()> {
@@ -34,6 +34,9 @@ async fn main() -> Result<()> {
         })
         .collect();
 
-    post(&collection_server, &token, &drv_ident, &output_attestations).await?;
+    let client = Client::builder()
+        .user_agent("lila/1.0")
+        .build()?;
+    post(&client, &collection_server, &token, &drv_ident, &output_attestations).await?;
     Ok(())
 }

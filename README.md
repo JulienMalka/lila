@@ -122,12 +122,17 @@ This script is still very much WIP, and will enter an infinite loop retrying fai
 
 Make sure you have the post-build hook and diff hook configured as documented above.
 
-TODO you have to make sure all derivations are available for building on your system -
-is there a smart way to do that?
+You have to make sure all derivations are available for building on your system.
+This can be done by `nix-instantiate`-ing the build definition. Making this easy
+by including this information in the report definition will be part of [#45](https://github.com/JulienMalka/lila/issues/45).
 
 ```
 $ export HASH_COLLECTION_TOKEN=XYX # your token for the cache.nixos.org import
-$ ./rebuilder.sh
+$ export HASH_COLLECTION_SERVER=http://localhost:8000
+$ export HASH_COLLECTION_REPORT=123-some-derivation.drv-build-closure
+$ export MAX_CORES=8
+$ nix shell github:JulienMalka/lila#utils
+$ rebuilder
 ```
 
 This script is still very much WIP, and will enter an infinite loop retrying failed fetches.

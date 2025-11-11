@@ -167,7 +167,7 @@ pub fn fingerprint(ctx: Ctx, out_path: &str, nar_hash: &str, size: u64) -> Strin
     return fingerprint;
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct SuggestedRebuild {
     pub drv_path: String,
     pub output: String,

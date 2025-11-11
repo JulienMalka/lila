@@ -36,18 +36,6 @@ fn perform_rebuild(s: &SuggestedRebuild) -> std::result::Result<(), String> {
 struct Next {
     reply_to: Sender<SuggestedRebuild>,
 }
-struct BuildSucceeded {
-    reply_to: Sender<SuggestedRebuild>,
-}
-struct BuildFailed {
-    drv_path: String,
-    reply_to: Sender<SuggestedRebuild>,
-}
-enum BuildCommand {
-    Next(Next),
-    BuildSucceeded(BuildSucceeded),
-    BuildFailed(BuildFailed),
-}
 
 #[tokio::main]
 async fn main() -> Result<()> {
@@ -60,30 +48,22 @@ async fn main() -> Result<()> {
         .user_agent("lila/1.0")
         .build()?;
 
-    let (tx, rx): (Sender<BuildCommand>, Receiver<BuildCommand>) = mpsc::channel();
+    let (tx, rx): (Sender<Next>, Receiver<Next>) = mpsc::channel();
 
     for _ in 0..n_builders {
         let coordinator = tx.clone();
 
         thread::spawn(move || {
            let (ltx, lrx) = mpsc::channel();
-           coordinator.send(BuildCommand::Next(Next{reply_to: ltx.clone()})).unwrap();
            loop {
+             coordinator.send(Next{reply_to: ltx.clone()}).unwrap();
              let to_rebuild = lrx.recv().unwrap();
-             let next = match perform_rebuild(&to_rebuild) {
+             match perform_rebuild(&to_rebuild) {
                  Ok(()) =>
-                     BuildCommand::BuildSucceeded(BuildSucceeded {
-                         reply_to: ltx.clone()
-                     }),
-                 Err(str) => {
-                     println!("Failed to build: {}", str);
-                     BuildCommand::BuildFailed(BuildFailed {
-                         drv_path: to_rebuild.drv_path,
-                         reply_to: ltx.clone()
-                     })
-                 },
+                     println!("Rebuilt {}^{}", to_rebuild.drv_path, to_rebuild.output),
+                 Err(str) =>
+                     println!("Failed to build: {}", str),
              };
-             coordinator.send(next).unwrap();
            }
         });
     }
@@ -91,15 +71,7 @@ async fn main() -> Result<()> {
     let mut to_build: Vec<SuggestedRebuild> = Vec::new();
     let mut started = HashSet::new();
     loop {
-        let reply_to = match rx.recv().unwrap() {
-            BuildCommand::Next(Next { reply_to }) =>
-                reply_to,
-            BuildCommand::BuildSucceeded(BuildSucceeded { reply_to }) =>
-                reply_to,
-            BuildCommand::BuildFailed(BuildFailed { drv_path, reply_to }) => {
-                reply_to
-            },
-        };
+        let reply_to = rx.recv().unwrap().reply_to;
         // TODO possibly refresh to_build when it is outdated.
         match to_build.pop() {
             Some(candidate) => {

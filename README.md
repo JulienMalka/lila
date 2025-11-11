@@ -127,16 +127,17 @@ This can be done by `nix-instantiate`-ing the build definition. Making this easy
 by including this information in the report definition will be part of [#45](https://github.com/JulienMalka/lila/issues/45).
 
 ```
+$ nix shell github:JulienMalka/lila#utils
 $ export HASH_COLLECTION_TOKEN=XYX # your token for the cache.nixos.org import
 $ export HASH_COLLECTION_SERVER=http://localhost:8000
 $ export HASH_COLLECTION_REPORT=123-some-derivation.drv-build-closure
 $ export MAX_CORES=8
-$ nix shell github:JulienMalka/lila#utils
 $ rebuilder
 ```
 
-This script is still very much WIP, and will enter an infinite loop retrying failed fetches.
-You can run multiple rebuilders in parallel.
+This will schedule `MAX_CORES` jobs in parallel, to keep the nix daemon
+queue saturated. It will not retry failures, and complete once it has
+attempted a rebuild for each package in the report.
 
 #### Defining links
 

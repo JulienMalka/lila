@@ -167,6 +167,24 @@ pub fn fingerprint(ctx: Ctx, out_path: &str, nar_hash: &str, size: u64) -> Strin
     return fingerprint;
 }
 
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct SuggestedRebuild {
+    pub drv_path: String,
+    pub output: String,
+    pub out_path: String,
+}
+
+pub async fn suggest(client: &Client, collection_server: &str, token: &str, report: &str) -> Result<Vec<SuggestedRebuild>> {
+    let suggestions = client
+        .get(format!("{0}/reports/{1}/suggest", collection_server, report))
+        .bearer_auth(token)
+        .send()
+        .await.expect("Fetching suggested rebuilds")
+        .json::<Vec<SuggestedRebuild>>()
+        .await.expect("Fetching the suggest responses");
+    Ok(suggestions)
+}
+
 pub async fn post(client: &Client, collection_server: &str, token: &str, drv_ident: &str, output_attestations: &Vec<OutputAttestation<'_>>) -> Result<()> {
     client
         .post(format!("{0}/attestation/{1}", collection_server, drv_ident))

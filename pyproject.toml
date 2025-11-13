@@ -22,6 +22,12 @@ dependencies = [
   "fastapi>=0.103.1",
 ]
 
+[project.optional-dependencies]
+test = [
+  "pytest>=7.4.0",
+  "httpx>=0.24.0",
+]
+
 [project.urls]
 Homepage = "https://github.com/JulienMalka/lila"
 Issues = "https://github.com/JulienMalka/lila/issues"

@@ -51,9 +51,12 @@
                 ps.jinja2
                 ps.pytest
                 ps.httpx
+                ps.alembic
+
                 ps.uvicorn
               ]))
               pkgs.jq
+              pkgs.sqlite
               pkgs.rust-analyzer
               pkgs.openssl
               (pkgs.callPackage ./utils/patched-nix { })

@@ -1,8 +1,11 @@
 import pytest
 from fastapi.testclient import TestClient
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, text, inspect
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.pool import StaticPool
+from alembic import command
+from alembic.config import Config
+from pathlib import Path
 
 from web import app, models, get_db
 from web.db import Base
@@ -28,12 +31,40 @@ def override_get_db():
         db.close()
 
 
+def run_alembic_migrations():
+    """Run alembic migrations on the test database"""
+    # Get path to alembic.ini
+    web_dir = Path(__file__).parent
+    alembic_ini_path = web_dir / "alembic.ini"
+
+    # Create alembic config
+    alembic_cfg = Config(str(alembic_ini_path))
+    alembic_cfg.set_main_option("sqlalchemy.url", SQLALCHEMY_DATABASE_URL)
+    alembic_cfg.set_main_option("script_location", str(web_dir / "alembic"))
+
+    # Upgrade to head
+    # Pass the connection via attributes so alembic uses the same in-memory DB
+    with engine.begin() as connection:
+        alembic_cfg.attributes['connection'] = connection
+        command.upgrade(alembic_cfg, "head")
+
+
 @pytest.fixture(scope="function")
 def test_db():
-    """Create a fresh database for each test"""
-    Base.metadata.create_all(bind=engine)
+    """Create a fresh database for each test using alembic migrations"""
+    # Use alembic to create schema instead of Base.metadata.create_all
+    run_alembic_migrations()
+
     yield
-    Base.metadata.drop_all(bind=engine)
+
+    # Clean up: drop all tables by explicitly listing them
+    # This is more reliable for SQLite in-memory databases with StaticPool
+    with engine.begin() as conn:
+        inspector = inspect(engine)
+        tables = inspector.get_table_names()
+        # Drop all tables including alembic_version
+        for table in tables:
+            conn.execute(text(f"DROP TABLE IF EXISTS {table}"))
 
 
 @pytest.fixture(scope="function")

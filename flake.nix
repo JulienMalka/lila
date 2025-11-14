@@ -44,18 +44,19 @@
               pkg-config
             ];
             buildInputs = [
-              (pkgs.python3.withPackages(ps: [
+              (pkgs.python3.withPackages (ps: [
                 ps.fastapi
                 ps.pydantic
                 ps.sqlalchemy
                 ps.jinja2
-
+                ps.pytest
+                ps.httpx
                 ps.uvicorn
               ]))
               pkgs.jq
               pkgs.rust-analyzer
               pkgs.openssl
-              (pkgs.callPackage ./utils/patched-nix {})
+              (pkgs.callPackage ./utils/patched-nix { })
               pkgs.nlohmann_json
               pkgs.libsodium
               pkgs.boost

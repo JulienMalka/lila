@@ -40,6 +40,7 @@ in
         ps.lila
         ps.uvicorn
         ps.psycopg2
+        ps.alembic
       ]);
 
       example = literalExpression ''
@@ -129,19 +130,48 @@ in
       };
     };
 
+    systemd.services.lila-migration = {
+      description = "Lila Database Migration";
+      environment = cfg.settings;
+      path = [ cfg.pythonEnv ];
+      script = ''
+        # Change to the lila package directory where alembic.ini is located
+        # This allows alembic to find its configuration and migration files
+        LILA_DIR="${cfg.pythonEnv}/${cfg.pythonEnv.sitePackages}/lila"
+        cd "$LILA_DIR"
+
+        # Run alembic migrations to bring database to latest version
+        ${cfg.pythonEnv}/bin/alembic upgrade head
+      '';
+      serviceConfig = {
+        Type = "oneshot";
+        User = "lila";
+        RemainAfterExit = true;
+      };
+      wantedBy = [ "multi-user.target" ];
+      wants = optional (lib.hasPrefix "postgresql" cfg.settings.SQLALCHEMY_DATABASE_URL) "postgresql.service";
+      after = [
+        "network.target"
+      ]
+      ++ optional (lib.hasPrefix "postgresql" cfg.settings.SQLALCHEMY_DATABASE_URL) "postgresql.service";
+    };
+
     systemd.services.lila = {
       environment = cfg.settings;
       path = [ cfg.pythonEnv ];
       script = "uvicorn lila:app --host 127.0.0.1 --port ${builtins.toString cfg.port}";
       serviceConfig = {
         User = "lila";
+        Restart = "on-failure";
       };
       wantedBy = [ "multi-user.target" ];
-      wants = [ "postgresql.target" ];
+      wants = optional (lib.hasPrefix "postgresql" cfg.settings.SQLALCHEMY_DATABASE_URL) "postgresql.service";
+      requires = [ "lila-migration.service" ];
       after = [
         "network.target"
-        "postgresql.service"
-      ];
+        "lila-migration.service"
+      ]
+      ++ optional (lib.hasPrefix "postgresql" cfg.settings.SQLALCHEMY_DATABASE_URL) "postgresql.service";
     };
     users.users = {
       lila = {

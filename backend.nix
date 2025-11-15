@@ -6,6 +6,7 @@
   fastapi,
   hatchling,
   sqlalchemy,
+  alembic,
 }:
 
 buildPythonPackage {
@@ -22,6 +23,7 @@ buildPythonPackage {
     pydantic
     sqlalchemy
     jinja2
+    alembic
   ];
 
   meta = with lib; {

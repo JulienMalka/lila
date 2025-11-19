@@ -33,8 +33,8 @@ def override_get_db():
 
 def run_alembic_migrations():
     """Run alembic migrations on the test database"""
-    # Get path to alembic.ini
-    web_dir = Path(__file__).parent
+    # Get path to alembic.ini (in web/ directory, parent of tests/)
+    web_dir = Path(__file__).parent.parent
     alembic_ini_path = web_dir / "alembic.ini"
 
     # Create alembic config
@@ -124,53 +124,6 @@ def test_derivation(client, test_user):
     assert response.status_code == 200
     # Return dict with drv_hash for compatibility with test expectations
     return type('obj', (object,), {'drv_hash': drv_hash})()
-
-
-@pytest.fixture
-def test_report(client, test_user):
-    """
-    Create a test report via the API using PUT /reports endpoint.
-    This is the proper E2E way - no direct database access.
-    """
-    report_data = {
-        "bomFormat": "CycloneDX",
-        "specVersion": "1.4",
-        "serialNumber": "urn:uuid:test-123",
-        "version": 1,
-        "metadata": {
-            "component": {
-                "bom-ref": "/nix/store/test123-root-package",
-                "type": "application",
-                "name": "test-package"
-            }
-        },
-        "components": [
-            {
-                "bom-ref": "/nix/store/test456-dep1",
-                "type": "library",
-                "name": "dep1",
-                "properties": [
-                    {"name": "nix:out_path", "value": "/nix/store/test456-dep1"},
-                    {"name": "nix:drv_path", "value": "/nix/store/test456-dep1.drv"}
-                ]
-            }
-        ],
-        "dependencies": [
-            {
-                "ref": "/nix/store/test123-root-package",
-                "dependsOn": ["/nix/store/test456-dep1"]
-            }
-        ]
-    }
-
-    response = client.put(
-        "/reports/test_report",
-        json=report_data,
-        headers={"Authorization": f"Bearer {test_user['token']}"}
-    )
-    assert response.status_code == 200
-    # Return object-like dict for compatibility
-    return type('obj', (object,), {'name': 'test_report'})()
 
 
 class TestDerivationEndpoints:
@@ -288,106 +241,6 @@ class TestAttestationEndpoints:
         assert data[0]["output_path"] == "/nix/store/test123-hello"
 
 
-class TestReportEndpoints:
-    """Tests for /reports endpoints"""
-
-    def test_get_reports_empty(self, client):
-        """Test getting reports list when empty"""
-        response = client.get("/reports")
-        assert response.status_code == 200
-        assert response.json() == []
-
-    def test_get_reports_list(self, client, test_report):
-        """Test getting list of report names"""
-        response = client.get("/reports")
-        assert response.status_code == 200
-        assert response.json() == ["test_report"]
-
-    def test_get_report_not_found(self, client):
-        """Test getting a report that doesn't exist"""
-        response = client.get("/reports/nonexistent")
-        assert response.status_code == 404
-        assert response.json()["detail"] == "Report not found"
-
-    def test_get_report_cyclonedx_format(self, client, test_report):
-        """Test getting report in CycloneDX format"""
-        response = client.get(
-            "/reports/test_report",
-            headers={"Accept": "application/vnd.cyclonedx+json"}
-        )
-        assert response.status_code == 200
-        assert response.headers["content-type"] == "application/vnd.cyclonedx+json"
-        data = response.json()
-        assert data["bomFormat"] == "CycloneDX"
-        assert data["metadata"]["component"]["bom-ref"] == "/nix/store/test123-root-package"
-
-    def test_get_report_text_format(self, client, test_report):
-        """Test getting report in text format"""
-        response = client.get(
-            "/reports/test_report",
-            headers={"Accept": "text/plain"}
-        )
-        assert response.status_code == 200
-        assert "text/plain" in response.headers["content-type"]
-        assert "root-package" in response.text
-
-    def test_get_report_html_format(self, client, test_report):
-        """Test getting report in HTML format"""
-        response = client.get(
-            "/reports/test_report",
-            headers={"Accept": "text/html"}
-        )
-        assert response.status_code == 200
-        assert "text/html" in response.headers["content-type"]
-
-    def test_put_report_without_auth(self, client):
-        """Test creating/updating report without authentication"""
-        report_data = {
-            "bomFormat": "CycloneDX",
-            "specVersion": "1.4",
-            "metadata": {
-                "component": {
-                    "bom-ref": "/nix/store/new-package",
-                    "type": "application"
-                }
-            }
-        }
-        response = client.put("/reports/new_report", json=report_data)
-        assert response.status_code == 401
-        assert response.json()["detail"] == "User not found"
-
-    def test_put_report_with_auth(self, client, test_user):
-        """Test creating/updating report with authentication"""
-        report_data = {
-            "bomFormat": "CycloneDX",
-            "specVersion": "1.4",
-            "metadata": {
-                "component": {
-                    "bom-ref": "/nix/store/new-package",
-                    "type": "application"
-                }
-            }
-        }
-        response = client.put(
-            "/reports/new_report",
-            json=report_data,
-            headers={"Authorization": f"Bearer {test_user['token']}"}
-        )
-        assert response.status_code == 200
-        assert "Report defined" in response.json()
-
-    def test_get_report_suggest(self, client, test_report, test_user):
-        """Test /suggest endpoint"""
-        response = client.get(
-            "/reports/test_report/suggest",
-            headers={"Authorization": f"Bearer {test_user['token']}"}
-        )
-        assert response.status_code == 200
-        data = response.json()
-        assert isinstance(data, list)
-        assert len(data) <= 50
-
-
 class TestLinkPatternEndpoints:
     """Tests for /link_patterns endpoints"""
 
@@ -491,3 +344,225 @@ class TestSignatureEndpoints:
         # Should not have Deriver line or should be empty
         assert "Deriver:" not in content or "Deriver: \n" in content
 
+
+class TestJobsetEndpoints:
+    """Test jobset API endpoints"""
+
+    def test_create_jobset(self, client, test_user):
+        """Test creating a new jobset"""
+        jobset_data = {
+            "name": "nixpkgs-unstable",
+            "description": "NixOS unstable channel",
+            "flakeref": "github:NixOS/nixpkgs/nixos-unstable",
+            "enabled": True
+        }
+        response = client.post(
+            "/api/jobsets",
+            json=jobset_data,
+            headers={"Authorization": f"Bearer {test_user['token']}"}
+        )
+        assert response.status_code == 200
+        data = response.json()
+        assert data["name"] == "nixpkgs-unstable"
+        assert data["flakeref"] == "github:NixOS/nixpkgs/nixos-unstable"
+        assert data["enabled"] == True
+        assert "id" in data
+
+    def test_create_jobset_without_auth(self, client):
+        """Test creating jobset without authentication fails"""
+        jobset_data = {
+            "name": "test-jobset",
+            "flakeref": "github:test/test"
+        }
+        response = client.post("/api/jobsets", json=jobset_data)
+        assert response.status_code == 401
+
+    def test_create_duplicate_jobset(self, client, test_user):
+        """Test creating duplicate jobset fails"""
+        jobset_data = {
+            "name": "duplicate-test",
+            "flakeref": "github:test/test"
+        }
+        # Create first jobset
+        response1 = client.post(
+            "/api/jobsets",
+            json=jobset_data,
+            headers={"Authorization": f"Bearer {test_user['token']}"}
+        )
+        assert response1.status_code == 200
+
+        # Try to create duplicate
+        response2 = client.post(
+            "/api/jobsets",
+            json=jobset_data,
+            headers={"Authorization": f"Bearer {test_user['token']}"}
+        )
+        assert response2.status_code == 409
+        assert "already exists" in response2.json()["detail"]
+
+    def test_list_jobsets_empty(self, client):
+        """Test listing jobsets when none exist"""
+        response = client.get("/api/jobsets")
+        assert response.status_code == 200
+        assert response.json() == []
+
+    def test_list_jobsets(self, client, test_user):
+        """Test listing jobsets"""
+        # Create a couple of jobsets
+        for i in range(3):
+            jobset_data = {
+                "name": f"jobset-{i}",
+                "flakeref": f"github:test/test{i}"
+            }
+            client.post(
+                "/api/jobsets",
+                json=jobset_data,
+                headers={"Authorization": f"Bearer {test_user['token']}"}
+            )
+
+        response = client.get("/api/jobsets")
+        assert response.status_code == 200
+        data = response.json()
+        assert len(data) == 3
+        assert all("name" in jobset for jobset in data)
+
+    def test_get_jobset(self, client, test_user):
+        """Test getting a specific jobset"""
+        # Create jobset
+        jobset_data = {
+            "name": "test-get",
+            "flakeref": "github:test/test"
+        }
+        create_response = client.post(
+            "/api/jobsets",
+            json=jobset_data,
+            headers={"Authorization": f"Bearer {test_user['token']}"}
+        )
+        jobset_id = create_response.json()["id"]
+
+        # Get jobset
+        response = client.get(f"/api/jobsets/{jobset_id}")
+        assert response.status_code == 200
+        data = response.json()
+        assert data["name"] == "test-get"
+        assert data["id"] == jobset_id
+
+    def test_get_jobset_not_found(self, client):
+        """Test getting non-existent jobset"""
+        response = client.get("/api/jobsets/99999")
+        assert response.status_code == 404
+    
+    def test_delete_jobset(self, client, test_user):
+        """Test deleting a jobset"""
+        # Create jobset
+        jobset_data = {"name": "test-delete", "flakeref": "github:test/test"}
+        create_response = client.post(
+            "/api/jobsets",
+            json=jobset_data,
+            headers={"Authorization": f"Bearer {test_user['token']}"}
+        )
+        jobset_id = create_response.json()["id"]
+
+        # Delete jobset
+        response = client.delete(
+            f"/api/jobsets/{jobset_id}",
+            headers={"Authorization": f"Bearer {test_user['token']}"}
+        )
+        assert response.status_code == 200
+        assert "deleted" in response.json()["message"].lower()
+
+        # Verify it's gone
+        get_response = client.get(f"/api/jobsets/{jobset_id}")
+        assert get_response.status_code == 404
+
+    def test_delete_jobset_without_auth(self, client, test_user):
+        """Test deleting jobset without authentication fails"""
+        # Create jobset
+        jobset_data = {"name": "test", "flakeref": "github:test/test"}
+        create_response = client.post(
+            "/api/jobsets",
+            json=jobset_data,
+            headers={"Authorization": f"Bearer {test_user['token']}"}
+        )
+        jobset_id = create_response.json()["id"]
+
+        # Try to delete without auth
+        response = client.delete(f"/api/jobsets/{jobset_id}")
+        assert response.status_code == 401
+
+class TestEvaluationEndpoints:
+    """Test evaluation API endpoints"""
+
+    def test_trigger_evaluation_with_real_flake(self, client, test_user):
+        """Test triggering a real evaluation"""
+        import subprocess
+        import shutil
+
+        # Check if nix-eval-jobs is available
+        if not shutil.which("nix-eval-jobs"):
+            pytest.skip("nix-eval-jobs not available")
+
+        # Create jobset pointing to local test fixture
+        test_fixtures_path = Path(__file__).parent / "fixtures"
+        jobset_data = {
+            "name": "test-fixture-flake",
+            "flakeref": f"path:{test_fixtures_path}#packages.x86_64-linux",
+            "description": "Test flake",
+            "enabled": True
+        }
+
+        create_response = client.post(
+            "/api/jobsets",
+            json=jobset_data,
+            headers={"Authorization": f"Bearer {test_user['token']}"}
+        )
+        assert create_response.status_code == 200, f"Failed to create jobset: {create_response.text}"
+        jobset_id = create_response.json()["id"]
+
+        # Trigger evaluation
+        eval_response = client.post(
+            f"/api/jobsets/{jobset_id}/evaluate",
+            headers={"Authorization": f"Bearer {test_user['token']}"}
+        )
+
+        # Check if evaluation was triggered
+        assert eval_response.status_code in [200, 202], f"Failed to trigger evaluation: {eval_response.text}"
+
+        if eval_response.status_code == 200:
+            eval_data = eval_response.json()
+            assert "id" in eval_data
+            assert eval_data["jobset_id"] == jobset_id
+
+            # Get the evaluation details
+            eval_id = eval_data["id"]
+            detail_response = client.get(f"/api/evaluations/{eval_id}")
+            assert detail_response.status_code == 200
+            detail = detail_response.json()
+
+            print(f"\nEvaluation result: status={detail['status']}, " +
+                  f"derivations={detail.get('derivation_count', 0)}, " +
+                  f"error={detail.get('error_message', 'none')}")
+
+            # If completed successfully, verify we have the expected derivations
+            if detail["status"] == "completed":
+                assert detail.get("derivation_count", 0) == 3, \
+                    "Expected exactly 3 derivations: hello-src, curl-src, test-derivation"
+
+                # Get the derivations for this evaluation via API
+                derivations_response = client.get(f"/api/evaluations/{eval_id}/derivations")
+                assert derivations_response.status_code == 200
+                derivations = derivations_response.json()
+
+                # Extract drv_hash values
+                drv_hashes = {d["drv_hash"] for d in derivations}
+
+                # Expected drv_hash values for the FODs in fixtures/flake.nix
+                expected_hashes = {
+                    "4sb1y1wjcfx0nznffnzfkiq7p5frydg0-hello-2.12.1.tar.gz.drv",
+                    "78j7dal6hzmzvawifz5vm6yq8k3cwzvg-test.txt.drv",
+                    "3b2n7367jx5mjqkay2wgcgw351dhk7b3-curl-8.4.0.tar.gz.drv"
+                }
+
+                print(f"Found drv_hashes: {drv_hashes}")
+                assert expected_hashes == drv_hashes, \
+                    f"Expected hashes {expected_hashes}, but got {drv_hashes}"

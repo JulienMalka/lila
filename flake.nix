@@ -64,6 +64,7 @@
               pkgs.libsodium
               pkgs.boost
               pkgs.rustfmt
+              pkgs.nix-eval-jobs
             ];
 
             RUST_SRC_PATH = "${pkgs.rust.packages.stable.rustPlatform.rustLibSrc}";

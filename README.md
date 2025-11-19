@@ -119,7 +119,7 @@ sources.
 ```
 $ nix shell .#utils
 $ export HASH_COLLECTION_TOKEN=XYX # your token for the cache.nixos.org import
-$ ./fetch-from-cache.sh
+$ ./fetch-from-cache.sh <evaluation-id>
 ```
 
 This script is still very much WIP, and will enter an infinite loop retrying failed fetches.
@@ -136,7 +136,7 @@ by including this information in the report definition will be part of [#45](htt
 $ nix shell github:JulienMalka/lila#utils
 $ export HASH_COLLECTION_TOKEN=XYX # your token for the cache.nixos.org import
 $ export HASH_COLLECTION_SERVER=http://localhost:8000
-$ export HASH_COLLECTION_REPORT=123-some-derivation.drv-build-closure
+$ export HASH_COLLECTION_EVALUATION=123 # evaluation ID
 $ export MAX_CORES=8
 $ rebuilder
 ```
@@ -149,7 +149,7 @@ attempted a rebuild for each package in the report.
 
 ```
 $ export HASH_COLLECTION_TOKEN=XYX # your token
-$ curl -X POST -G http://127.0.0.1:8000/link_patterns --data-urlencode 'pattern=samba.*' --data-urlencode 'link=https://github.com/NixOS/nixpkgs/issues/303436' -H "Authorization: Bearer $HASH_COLLECTION_TOKEN"
+$ curl -X POST -G http://127.0.0.1:8000/api/link_patterns --data-urlencode 'pattern=samba.*' --data-urlencode 'link=https://github.com/NixOS/nixpkgs/issues/303436' -H "Authorization: Bearer $HASH_COLLECTION_TOKEN"
 ```
 
 ## Related projects

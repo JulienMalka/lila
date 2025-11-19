@@ -21,14 +21,14 @@ buildPythonPackage {
   nativeBuildInputs = [ hatchling ];
 
   checkPhase = ''
-    python -m pytest web/test_api.py
+    python -m pytest web/tests/
   '';
 
   checkInputs = [
     pytest
     httpx
   ];
-  
+
   propagatedBuildInputs = [
     fastapi
     pydantic

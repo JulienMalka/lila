@@ -1,10 +1,10 @@
 import datetime
 import random
 import string
-from typing import List
+from typing import List, Optional
 
 from sqlalchemy import (Column, DateTime, ForeignKey, Integer, Table,
-                        UniqueConstraint, func)
+                        UniqueConstraint, func, Text)
 from sqlalchemy.orm import Mapped, column_property, mapped_column, relationship
 
 from .db import Base
@@ -79,16 +79,66 @@ class Attestation(Base):
     output_hash: Mapped[str] = mapped_column()
     output_sig: Mapped[str] = mapped_column()
 
-class Report(Base):
-    __tablename__ = "reports"
-    id: Mapped[int] = mapped_column(primary_key=True)
-    name: Mapped[str] = mapped_column()
-    # For now we store the definition in a CycloneDX JSON blob,
-    # later we might want to normalize it into its own database
-    # structure.
-    definition: Mapped[str] = mapped_column()
-
 class LinkPattern(Base):
     __tablename__ = "link_patterns"
     pattern: Mapped[str] = mapped_column(primary_key=True)
     link: Mapped[str] = mapped_column()
+
+class Jobset(Base):
+    __tablename__ = "jobsets"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    name: Mapped[str] = mapped_column(unique=True, index=True)
+    description: Mapped[Optional[str]] = mapped_column(default=None)
+
+    # Flakeref (includes branch and package)
+    # Example: "github:NixOS/nixpkgs/nixos-unstable#legacyPackages.x86_64-linux.hello"
+    flakeref: Mapped[str] = mapped_column()
+
+    # Settings
+    enabled: Mapped[bool] = mapped_column(default=True)
+
+    # Metadata
+    created_at: Mapped[datetime.datetime] = mapped_column(default=datetime.datetime.utcnow)
+    updated_at: Mapped[datetime.datetime] = mapped_column(
+        default=datetime.datetime.utcnow,
+        onupdate=datetime.datetime.utcnow
+    )
+
+    # Relationships
+    evaluations: Mapped[List["Evaluation"]] = relationship(back_populates="jobset")
+
+class Evaluation(Base):
+    __tablename__ = "evaluations"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    jobset_id: Mapped[int] = mapped_column(ForeignKey("jobsets.id"), index=True)
+
+    # Evaluation metadata
+    evaluation_number: Mapped[int] = mapped_column()  # Sequential per jobset
+    started_at: Mapped[datetime.datetime] = mapped_column(default=datetime.datetime.utcnow)
+    completed_at: Mapped[Optional[datetime.datetime]] = mapped_column(default=None)
+    status: Mapped[str] = mapped_column(default="pending")  # pending, running, completed, failed
+
+    # Results
+    error_message: Mapped[Optional[str]] = mapped_column(Text, default=None)
+    derivation_count: Mapped[Optional[int]] = mapped_column(default=None)
+
+    # Relationships
+    jobset: Mapped["Jobset"] = relationship(back_populates="evaluations")
+    derivations: Mapped[List["EvaluationDerivation"]] = relationship(back_populates="evaluation")
+
+class EvaluationDerivation(Base):
+    __tablename__ = "evaluation_derivations"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    evaluation_id: Mapped[int] = mapped_column(ForeignKey("evaluations.id"), index=True)
+    derivation_id: Mapped[int] = mapped_column(ForeignKey("derivations.id"), index=True)
+
+    # Metadata from this specific evaluation
+    attribute_path: Mapped[Optional[str]] = mapped_column(default=None)
+    output_paths: Mapped[Optional[str]] = mapped_column(Text, default=None)  # JSON array
+
+    # Relationships
+    evaluation: Mapped["Evaluation"] = relationship(back_populates="derivations")
+    derivation: Mapped["Derivation"] = relationship()

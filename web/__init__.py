@@ -9,20 +9,12 @@ from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
 
 # Import routers
-from .api import attestations, derivations, link_patterns, signatures
-from .views import reports
+from .api import attestations, derivations, evaluations, jobsets, link_patterns, signatures
 
 # Import common utilities
 from .common import get_db, get_token
 
-# Import models for database initialization
-from . import models, crud
-from .db import engine
 
-# Create tables (will be replaced with Alembic migrations in future)
-models.Base.metadata.create_all(bind=engine)
-
-# Create FastAPI app
 app = FastAPI(
     title="Lila",
     description="Reproducibility tracker for Nix builds",
@@ -46,7 +38,8 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Include API routers (JSON endpoints)
+
+# Include API routers (JSON)
 app.include_router(
     attestations.router,
     tags=["attestations"]
@@ -58,11 +51,16 @@ app.include_router(
     tags=["derivations"]
 )
 
-# Include view routers (HTML endpoints)
 app.include_router(
-    reports.router,
-    prefix="/reports",
-    tags=["reports"]
+    evaluations.router,
+    prefix="/api/evaluations",
+    tags=["evaluations"]
+)
+
+app.include_router(
+    jobsets.router,
+    prefix="/api/jobsets",
+    tags=["jobsets"]
 )
 
 app.include_router(

@@ -36,12 +36,6 @@ def create_attestation(db: Session, drv_hash: str, output_hash_map: list[schemas
         ))
         db.commit()
 
-def report(db: Session, name: str):
-    r = db.query(models.Report).filter_by(name=name).one_or_none()
-    if r == None:
-        return None
-    return json.loads(r.definition)
-
 def suggest(db: Session, elements, user_id):
     # Derivations in the database might not match derivations on the rebuilder system.
     # TODO: can this happen only for FODs or also for other derivations?
@@ -89,14 +83,6 @@ def path_summaries(db: Session, paths):
             results[output_path] = "Consistently nondeterministic"
     return results
 
-def define_report(db: Session, name: str, definition: dict):
-    db.execute(
-        insert(models.Report).values({
-            "name": name,
-            "definition": json.dumps(definition),
-        }))
-    db.commit()
-
 def add_link_pattern(db: Session, pattern: str, link: str):
     db.execute(
         insert(models.LinkPattern).values({
@@ -111,3 +97,102 @@ def get_user_with_token(db: Session, token_val: str):
     if token is None:
         return None
     return token.user_id
+
+# Jobset CRUD operations
+def create_jobset(db: Session, name: str, flakeref: str, description: str = None, enabled: bool = True):
+    jobset = models.Jobset(
+        name=name,
+        flakeref=flakeref,
+        description=description,
+        enabled=enabled
+    )
+    db.add(jobset)
+    db.commit()
+    db.refresh(jobset)
+    return jobset
+
+def get_jobset(db: Session, jobset_id: int):
+    return db.query(models.Jobset).filter_by(id=jobset_id).one_or_none()
+
+def get_jobset_by_name(db: Session, name: str):
+    return db.query(models.Jobset).filter_by(name=name).one_or_none()
+
+def list_jobsets(db: Session):
+    return db.query(models.Jobset).all()
+
+def update_jobset(db: Session, jobset_id: int, **kwargs):
+    jobset = get_jobset(db, jobset_id)
+    if jobset is None:
+        return None
+
+    for key, value in kwargs.items():
+        if value is not None and hasattr(jobset, key):
+            setattr(jobset, key, value)
+
+    db.commit()
+    db.refresh(jobset)
+    return jobset
+
+def delete_jobset(db: Session, jobset_id: int):
+    jobset = get_jobset(db, jobset_id)
+    if jobset is None:
+        return False
+    db.delete(jobset)
+    db.commit()
+    return True
+
+# Evaluation CRUD operations
+def create_evaluation(db: Session, jobset_id: int):
+    """Create a new evaluation for a jobset"""
+    # Get the next evaluation number for this jobset
+    last_eval = db.query(models.Evaluation)\
+        .filter_by(jobset_id=jobset_id)\
+        .order_by(models.Evaluation.evaluation_number.desc())\
+        .first()
+
+    eval_number = (last_eval.evaluation_number + 1) if last_eval else 1
+
+    evaluation = models.Evaluation(
+        jobset_id=jobset_id,
+        evaluation_number=eval_number,
+        status="pending"
+    )
+    db.add(evaluation)
+    db.commit()
+    db.refresh(evaluation)
+    return evaluation
+
+def get_evaluation(db: Session, evaluation_id: int):
+    return db.query(models.Evaluation).filter_by(id=evaluation_id).one_or_none()
+
+def list_evaluations(db: Session, jobset_id: int = None):
+    query = db.query(models.Evaluation)
+    if jobset_id is not None:
+        query = query.filter_by(jobset_id=jobset_id)
+    return query.order_by(models.Evaluation.started_at.desc()).all()
+
+def update_evaluation(db: Session, evaluation_id: int, **kwargs):
+    evaluation = get_evaluation(db, evaluation_id)
+    if evaluation is None:
+        return None
+
+    for key, value in kwargs.items():
+        if hasattr(evaluation, key):
+            setattr(evaluation, key, value)
+
+    db.commit()
+    db.refresh(evaluation)
+    return evaluation
+
+def add_evaluation_derivation(db: Session, evaluation_id: int, derivation_id: int,
+                              attribute_path: str = None, output_paths: str = None):
+    """Link a derivation to an evaluation"""
+    eval_drv = models.EvaluationDerivation(
+        evaluation_id=evaluation_id,
+        derivation_id=derivation_id,
+        attribute_path=attribute_path,
+        output_paths=output_paths
+    )
+    db.add(eval_drv)
+    db.commit()
+    return eval_drv

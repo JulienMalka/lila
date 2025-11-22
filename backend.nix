@@ -7,6 +7,8 @@
   hatchling,
   sqlalchemy,
   alembic,
+  pytest,
+  httpx,
 }:
 
 buildPythonPackage {
@@ -18,6 +20,15 @@ buildPythonPackage {
 
   nativeBuildInputs = [ hatchling ];
 
+  checkPhase = ''
+    python -m pytest web/test_api.py
+  '';
+
+  checkInputs = [
+    pytest
+    httpx
+  ];
+  
   propagatedBuildInputs = [
     fastapi
     pydantic

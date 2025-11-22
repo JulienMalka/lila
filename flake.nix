@@ -34,7 +34,9 @@
             default = utils;
           };
 
-          checks.packages.utils = packages.utils;
+          checks.packages = {
+            inherit (packages) utils web;
+          };
 
           devShells.default = pkgs.mkShell {
             nativeBuildInputs = with pkgs; [

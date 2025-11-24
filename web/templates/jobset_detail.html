@@ -1,0 +1,346 @@
+{% extends "base.html" %}
+
+{% block title %}{{ jobset.name }} - Lila{% endblock %}
+
+{% block extra_head %}
+<!-- Plotly.js -->
+<script src="https://cdn.plot.ly/plotly-2.27.0.min.js"></script>
+{% endblock %}
+
+{% block content %}
+<div class="px-4 py-8">
+  <!-- Breadcrumb -->
+  <nav class="mb-6 text-sm text-gray-600">
+    <a href="/jobsets" class="hover:text-blue-600">Jobsets</a>
+    <span class="mx-2">›</span>
+    <span class="text-gray-900 font-medium">{{ jobset.name }}</span>
+  </nav>
+
+  <!-- Header -->
+  <div class="mb-6">
+    <div class="flex items-start justify-between">
+      <div>
+        <h1 class="text-3xl font-bold text-gray-900 mb-2">{{ jobset.name }}</h1>
+        {% if jobset.description %}
+        <p class="text-gray-600 mb-4">{{ jobset.description }}</p>
+        {% endif %}
+        <div class="flex items-center gap-4">
+          {% if jobset.enabled %}
+          <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
+            Enabled
+          </span>
+          {% else %}
+          <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-gray-100 text-gray-800">
+            Disabled
+          </span>
+          {% endif %}
+        </div>
+      </div>
+      {% if evaluations %}
+      <a href="/evaluations/{{ evaluations[0].evaluation.id }}" class="inline-flex items-center px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors">
+        <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6"></path>
+        </svg>
+        Latest Evaluation
+      </a>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- Statistics -->
+  <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+    <div class="bg-white rounded-lg shadow p-6">
+      <h3 class="text-gray-500 text-sm font-medium mb-2">Total Evaluations</h3>
+      <p class="text-3xl font-bold text-gray-900">{{ evaluations|length }}</p>
+    </div>
+
+    <div class="bg-white rounded-lg shadow p-6">
+      <h3 class="text-gray-500 text-sm font-medium mb-2">Latest Evaluation</h3>
+      {% if evaluations %}
+      <a href="/evaluations/{{ evaluations[0].evaluation.id }}" class="text-3xl font-bold text-blue-600 hover:text-blue-800">#{{ evaluations[0].evaluation.id }}</a>
+      <p class="text-sm text-gray-500 mt-1">{{ evaluations[0].evaluation.uploaded_at.strftime('%Y-%m-%d') if evaluations[0].evaluation.uploaded_at else '-' }}</p>
+      {% else %}
+      <p class="text-xl text-gray-400">No evaluations</p>
+      {% endif %}
+    </div>
+
+    <div class="bg-white rounded-lg shadow p-6">
+      <h3 class="text-gray-500 text-sm font-medium mb-2">Created</h3>
+      <p class="text-lg font-semibold text-gray-900">
+        {{ jobset.created_at.strftime('%Y-%m-%d') if jobset.created_at else '-' }}
+      </p>
+    </div>
+  </div>
+
+  <!-- Charts -->
+  <div class="grid grid-cols-1 gap-6 mb-8">
+    <!-- Percentage Chart -->
+    <div class="bg-white rounded-lg shadow p-6">
+      <h2 class="text-xl font-semibold text-gray-900 mb-4">Reproducibility Over Time (Percentage)</h2>
+      <div id="percentageChart" style="height: 400px;"></div>
+    </div>
+
+    <!-- Absolute Numbers Chart -->
+    <div class="bg-white rounded-lg shadow p-6">
+      <h2 class="text-xl font-semibold text-gray-900 mb-4">Reproducibility Over Time (Absolute Numbers)</h2>
+      <div id="absoluteChart" style="height: 400px;"></div>
+    </div>
+  </div>
+
+  <!-- Evaluations List -->
+  <div class="bg-white rounded-lg shadow overflow-hidden">
+    <div class="px-6 py-4 border-b border-gray-200">
+      <h2 class="text-xl font-semibold text-gray-900">Evaluations</h2>
+    </div>
+
+    <table class="min-w-full divide-y divide-gray-200">
+      <thead class="bg-gray-50">
+        <tr>
+          <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Eval #</th>
+          <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Uploaded</th>
+          <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Derivations</th>
+          <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Reproducibility</th>
+        </tr>
+      </thead>
+      <tbody class="bg-white divide-y divide-gray-200">
+        {% for item in evaluations %}
+        <tr class="hover:bg-gray-50">
+          <td class="px-6 py-4 whitespace-nowrap">
+            <a href="/evaluations/{{ item.evaluation.id }}" class="text-blue-600 hover:text-blue-800 font-medium">
+              #{{ item.evaluation.id }}
+            </a>
+          </td>
+          <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+            {{ item.evaluation.uploaded_at.strftime('%Y-%m-%d') if item.evaluation.uploaded_at else '-' }}
+          </td>
+          <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+            {{ item.total }}
+          </td>
+          <td class="px-6 py-4">
+            {% if item.total > 0 %}
+            <div class="flex items-center gap-3">
+              <!-- Mini progress bar -->
+              <div class="w-24 h-2 bg-gray-200 rounded-full overflow-hidden flex">
+                {% if item.reproducible > 0 %}
+                <div class="bg-green-500 h-full" style="width: {{ (item.reproducible / item.total * 100)|round(1) }}%"></div>
+                {% endif %}
+                {% if item.not_reproducible > 0 %}
+                <div class="bg-red-500 h-full" style="width: {{ (item.not_reproducible / item.total * 100)|round(1) }}%"></div>
+                {% endif %}
+                {% if item.pending > 0 %}
+                <div class="bg-gray-300 h-full" style="width: {{ (item.pending / item.total * 100)|round(1) }}%"></div>
+                {% endif %}
+              </div>
+              <!-- Stats -->
+              <div class="flex items-center gap-2 text-xs">
+                <span class="text-green-600 font-medium">{{ item.reproducible }}</span>
+                <span class="text-gray-400">/</span>
+                <span class="text-red-600 font-medium">{{ item.not_reproducible }}</span>
+                <span class="text-gray-400">/</span>
+                <span class="text-gray-500">{{ item.pending }}</span>
+              </div>
+            </div>
+            {% else %}
+            <span class="text-sm text-gray-400">-</span>
+            {% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+
+    {% if not evaluations %}
+    <div class="text-center py-12">
+      <p class="text-gray-500">No evaluations yet</p>
+    </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+// Parse chart data from server
+try {
+  var chartData = {{ chart_data|safe }};
+  console.log('Chart data loaded:', chartData);
+} catch (e) {
+  console.error('Error parsing chart data:', e);
+  var chartData = { eval_numbers: [] };
+}
+
+if (chartData.eval_numbers && chartData.eval_numbers.length > 0) {
+
+  var config = {
+    responsive: true,
+    displayModeBar: false
+  };
+
+  // Percentage Chart - Stacked area with smooth spline curves
+  var percentageTraces = [
+    {
+      name: 'Reproducible',
+      x: chartData.dates,
+      y: chartData.reproducible_pct,
+      type: 'scatter',
+      mode: 'lines+markers',
+      fill: 'tonexty',
+      fillcolor: 'rgba(16, 185, 129, 0.5)',
+      line: { color: '#10b981', width: 2, shape: 'spline', smoothing: 0.6 },
+      marker: { color: '#10b981', size: 6 },
+      stackgroup: 'one',
+      hovertemplate: '<b>Reproducible</b>: %{y:.1f}%<extra></extra>'
+    },
+    {
+      name: 'Not Reproducible',
+      x: chartData.dates,
+      y: chartData.not_reproducible_pct,
+      type: 'scatter',
+      mode: 'lines+markers',
+      fill: 'tonexty',
+      fillcolor: 'rgba(239, 68, 68, 0.5)',
+      line: { color: '#ef4444', width: 2, shape: 'spline', smoothing: 0.6 },
+      marker: { color: '#ef4444', size: 6 },
+      stackgroup: 'one',
+      hovertemplate: '<b>Not Reproducible</b>: %{y:.1f}%<extra></extra>'
+    },
+    {
+      name: 'Pending',
+      x: chartData.dates,
+      y: chartData.pending_pct,
+      type: 'scatter',
+      mode: 'lines+markers',
+      fill: 'tonexty',
+      fillcolor: 'rgba(209, 213, 219, 0.5)',
+      line: { color: '#9ca3af', width: 2, shape: 'spline', smoothing: 0.6 },
+      marker: { color: '#9ca3af', size: 6 },
+      stackgroup: 'one',
+      hovertemplate: '<b>Pending</b>: %{y:.1f}%<extra></extra>'
+    }
+  ];
+
+  var percentageLayout = {
+    xaxis: {
+      type: 'date',
+      tickfont: { size: 11, color: '#6b7280' },
+      gridcolor: '#f3f4f6',
+      linecolor: '#e5e7eb'
+    },
+    yaxis: {
+      range: [0, 100],
+      ticksuffix: '%',
+      tickfont: { size: 11, color: '#6b7280' },
+      gridcolor: '#f3f4f6',
+      linecolor: '#e5e7eb',
+      zeroline: false
+    },
+    hovermode: 'x unified',
+    hoverlabel: { bgcolor: 'white', bordercolor: '#e5e7eb', font: { size: 12 } },
+    showlegend: true,
+    legend: {
+      orientation: 'h',
+      yanchor: 'bottom',
+      y: -0.2,
+      xanchor: 'center',
+      x: 0.5,
+      font: { size: 11 }
+    },
+    margin: { t: 10, b: 60, l: 45, r: 20 },
+    paper_bgcolor: 'rgba(0,0,0,0)',
+    plot_bgcolor: 'rgba(0,0,0,0)'
+  };
+
+  try {
+    Plotly.newPlot('percentageChart', percentageTraces, percentageLayout, config);
+  } catch (e) {
+    console.error('Error creating percentage chart:', e);
+    document.getElementById('percentageChart').innerHTML = '<div class="text-center py-12 text-red-600">Error creating chart: ' + e.message + '</div>';
+  }
+
+  // Absolute Numbers Chart - Stacked area with smooth spline curves
+  var absoluteTraces = [
+    {
+      name: 'Reproducible',
+      x: chartData.dates,
+      y: chartData.reproducible,
+      type: 'scatter',
+      mode: 'lines+markers',
+      fill: 'tonexty',
+      fillcolor: 'rgba(16, 185, 129, 0.5)',
+      line: { color: '#10b981', width: 2, shape: 'spline', smoothing: 0.6 },
+      marker: { color: '#10b981', size: 6 },
+      stackgroup: 'one',
+      hovertemplate: '<b>Reproducible</b>: %{y}<extra></extra>'
+    },
+    {
+      name: 'Not Reproducible',
+      x: chartData.dates,
+      y: chartData.not_reproducible,
+      type: 'scatter',
+      mode: 'lines+markers',
+      fill: 'tonexty',
+      fillcolor: 'rgba(239, 68, 68, 0.5)',
+      line: { color: '#ef4444', width: 2, shape: 'spline', smoothing: 0.6 },
+      marker: { color: '#ef4444', size: 6 },
+      stackgroup: 'one',
+      hovertemplate: '<b>Not Reproducible</b>: %{y}<extra></extra>'
+    },
+    {
+      name: 'Pending',
+      x: chartData.dates,
+      y: chartData.pending,
+      type: 'scatter',
+      mode: 'lines+markers',
+      fill: 'tonexty',
+      fillcolor: 'rgba(209, 213, 219, 0.5)',
+      line: { color: '#9ca3af', width: 2, shape: 'spline', smoothing: 0.6 },
+      marker: { color: '#9ca3af', size: 6 },
+      stackgroup: 'one',
+      hovertemplate: '<b>Pending</b>: %{y}<extra></extra>'
+    }
+  ];
+
+  var absoluteLayout = {
+    xaxis: {
+      type: 'date',
+      tickfont: { size: 11, color: '#6b7280' },
+      gridcolor: '#f3f4f6',
+      linecolor: '#e5e7eb'
+    },
+    yaxis: {
+      tickfont: { size: 11, color: '#6b7280' },
+      gridcolor: '#f3f4f6',
+      linecolor: '#e5e7eb',
+      zeroline: false
+    },
+    hovermode: 'x unified',
+    hoverlabel: { bgcolor: 'white', bordercolor: '#e5e7eb', font: { size: 12 } },
+    showlegend: true,
+    legend: {
+      orientation: 'h',
+      yanchor: 'bottom',
+      y: -0.2,
+      xanchor: 'center',
+      x: 0.5,
+      font: { size: 11 }
+    },
+    margin: { t: 10, b: 60, l: 45, r: 20 },
+    paper_bgcolor: 'rgba(0,0,0,0)',
+    plot_bgcolor: 'rgba(0,0,0,0)'
+  };
+
+  try {
+    Plotly.newPlot('absoluteChart', absoluteTraces, absoluteLayout, config);
+  } catch (e) {
+    console.error('Error creating absolute chart:', e);
+    document.getElementById('absoluteChart').innerHTML = '<div class="text-center py-12 text-red-600">Error creating chart: ' + e.message + '</div>';
+  }
+} else {
+  console.log('No chart data available');
+  // Show message in chart divs
+  var noDataMsg = '<div class="text-center py-12 text-gray-500">No evaluation data available yet</div>';
+  document.getElementById('percentageChart').innerHTML = noDataMsg;
+  document.getElementById('absoluteChart').innerHTML = noDataMsg;
+}
+</script>
+{% endblock %}

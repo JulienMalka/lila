@@ -1,0 +1,86 @@
+{% extends "base.html" %}
+
+{% block title %}Lila - NixOS Reproducibility Tracker{% endblock %}
+
+{% block content %}
+<div class="px-4 py-8">
+  <!-- Hero Section -->
+  <div class="mb-12 text-center">
+    <h1 class="text-4xl font-bold text-gray-900 mb-4">Lila</h1>
+    <p class="text-xl text-gray-600 mb-2">NixOS Reproducible Builds Tracker</p>
+    <p class="text-gray-500">Track and verify reproducibility of Nix derivations</p>
+  </div>
+
+  <!-- Statistics Cards -->
+  <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-12">
+    <div class="bg-white rounded-lg shadow p-6 border-l-4 border-blue-500">
+      <h3 class="text-gray-500 text-sm font-medium mb-2">Total Jobsets</h3>
+      <p class="text-3xl font-bold text-gray-900">{{ stats.jobsets }}</p>
+    </div>
+
+    <div class="bg-white rounded-lg shadow p-6 border-l-4 border-green-500">
+      <h3 class="text-gray-500 text-sm font-medium mb-2">Total Evaluations</h3>
+      <p class="text-3xl font-bold text-gray-900">{{ stats.evaluations }}</p>
+    </div>
+
+    <div class="bg-white rounded-lg shadow p-6 border-l-4 border-purple-500">
+      <h3 class="text-gray-500 text-sm font-medium mb-2">Total Derivations</h3>
+      <p class="text-3xl font-bold text-gray-900">{{ stats.derivations }}</p>
+    </div>
+
+    <div class="bg-white rounded-lg shadow p-6 border-l-4 border-orange-500">
+      <h3 class="text-gray-500 text-sm font-medium mb-2">Total Attestations</h3>
+      <p class="text-3xl font-bold text-gray-900">{{ stats.attestations }}</p>
+    </div>
+  </div>
+
+  <!-- Active Jobsets -->
+  <div class="bg-white rounded-lg shadow overflow-hidden">
+    <div class="px-6 py-4 border-b border-gray-200 flex justify-between items-center">
+      <h2 class="text-xl font-semibold text-gray-900">Active Jobsets</h2>
+      <a href="/jobsets" class="text-blue-600 hover:text-blue-800 font-medium text-sm">
+        View all →
+      </a>
+    </div>
+
+    {% if active_jobsets %}
+    <div class="divide-y divide-gray-200">
+      {% for jobset in active_jobsets %}
+      <div class="px-6 py-4 hover:bg-gray-50 transition-colors">
+        <div class="flex justify-between items-start">
+          <div class="flex-1">
+            <a href="/jobsets/{{ jobset.id }}" class="text-lg font-medium text-blue-600 hover:text-blue-800">
+              {{ jobset.name }}
+            </a>
+            {% if jobset.description %}
+            <p class="text-sm text-gray-600 mt-1">{{ jobset.description }}</p>
+            {% endif %}
+            <div class="mt-2 flex items-center gap-4">
+              {% if jobset.latest_eval %}
+              <a href="/evaluations/{{ jobset.latest_eval.id }}" class="text-xs text-gray-500 hover:text-blue-600">
+                Latest: #{{ jobset.latest_eval.id }}
+                <span class="text-gray-400">({{ jobset.latest_eval.uploaded_at.strftime('%Y-%m-%d') if jobset.latest_eval.uploaded_at else '-' }})</span>
+              </a>
+              {% else %}
+              <span class="text-xs text-gray-400">No evaluations yet</span>
+              {% endif %}
+            </div>
+          </div>
+          <span class="ml-4 px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
+            Enabled
+          </span>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+    {% else %}
+    <div class="text-center py-12">
+      <p class="text-gray-500 mb-4">No active jobsets</p>
+      <a href="/jobsets" class="text-blue-600 hover:text-blue-800 font-medium">
+        View all jobsets
+      </a>
+    </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

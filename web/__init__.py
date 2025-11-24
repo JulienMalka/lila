@@ -3,17 +3,13 @@ Lila - Reproducibility tracker for Nix builds
 Main FastAPI application
 """
 import pathlib
-from fastapi import Depends, FastAPI, Response
+from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
-from sqlalchemy.orm import Session
 
 # Import routers
 from .api import attestations, derivations, evaluations, jobsets, link_patterns, signatures
-
-# Import common utilities
-from .common import get_db, get_token
-
+from .views import home, jobsets as jobsets_views, evaluations as evaluations_views, derivations as derivations_views
 
 app = FastAPI(
     title="Lila",
@@ -38,6 +34,11 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# Include view routers (HTML)
+app.include_router(home.router)
+app.include_router(jobsets_views.router, prefix="/jobsets")
+app.include_router(evaluations_views.router, prefix="/evaluations")
+app.include_router(derivations_views.router, prefix="/derivations")
 
 # Include API routers (JSON)
 app.include_router(

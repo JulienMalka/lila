@@ -19,9 +19,6 @@ from .common import get_db, get_token
 from . import models, crud
 from .db import engine
 
-# Create tables (will be replaced with Alembic migrations in future)
-models.Base.metadata.create_all(bind=engine)
-
 # Create FastAPI app
 app = FastAPI(
     title="Lila",

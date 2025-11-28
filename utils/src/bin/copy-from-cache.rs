@@ -1,7 +1,9 @@
 use nix_hash_collection_utils::*;
 use regex::Regex;
 use reqwest::{Client, Result};
+use std::collections::HashSet;
 use std::env;
+use std::process::exit;
 
 async fn fetch<'a>(client: &'a Client, cache_url: &'a str, out_path: &'a str) -> OutputAttestation<'a> {
     let out_digest = parse_store_path_digest(out_path);
@@ -41,6 +43,44 @@ async fn fetch<'a>(client: &'a Client, cache_url: &'a str, out_path: &'a str) ->
     }
 }
 
+async fn copy(client: &Client, cache_server: &str, collection_server: &str, token: &str, out_path: &str, drv_hash: &str) -> Result<()> {
+        let output = fetch(&client, &cache_server, &out_path).await;
+        post(&client, &collection_server, &token, &drv_hash, &Vec::from([output])).await?;
+        Ok(())
+}
+
+async fn copy_all(client: &Client, cache_server: &str, evaluation: &str, collection_server: &str, token: &str) -> Result<()> {
+    let mut failed: HashSet<String> = HashSet::new();
+    let mut to_build: Vec<SuggestedRebuild> = Vec::new();
+    loop {
+        match to_build.pop() {
+            Some(candidate) => {
+                let drv_hash = parse_drv_hash(&candidate.drv_path);
+                match copy(client, cache_server, collection_server, token, &candidate.out_path, drv_hash).await {
+                //match copy(client, cache_server, collection_server, token, &candidate.out_path, &candidate.drv_path.clone()).await {
+                    Ok(()) =>
+                        (),// Continue
+                    Err(_) => {
+                        failed.insert(candidate.drv_path.clone());
+                    },
+                };
+            }
+            None => {
+                to_build = suggest(&client, &collection_server, &token, &evaluation)
+                    .await?
+                    .iter()
+                    .filter(|x| !failed.contains(&x.drv_path))
+                    .cloned()
+                    .collect();
+                if to_build.is_empty() {
+                    println!("Nothing left to copy!");
+                    exit(0)
+                }
+            }
+        }
+    }
+}
+
 #[tokio::main]
 async fn main() -> Result<()> {
     // TODO maybe move those to a config file?
@@ -52,17 +92,22 @@ async fn main() -> Result<()> {
     };
     let args: Vec<String> = env::args().collect();
 
-    // The out path to fetch
-    let out_path = &args[1];
-    // The deriver identification, i.e. without '/nix/store', under which to file this out path
-    let drv_ident = &args[2];
-
     let client = Client::builder()
         .user_agent("lila/1.0")
         .build()?;
 
-    let output = fetch(&client, &cache_server, &out_path).await;
-    post(&client, &collection_server, &token, &drv_ident, &Vec::from([output])).await?;
+    if args.len() == 2 {
+        // The out path to fetch
+        let out_path = &args[1];
+        // The derivation hash, i.e. the derivation path without the '/nix/store' prefix
+        // or '.drv' suffix, under which to file this out path
+        let drv_hash = &args[2];
+
+        copy(&client, &cache_server, &collection_server, &token, &out_path, &drv_hash).await?;
+    } else {
+        let evaluation = read_env_var_or_panic("HASH_COLLECTION_EVALUATION");
+        copy_all(&client, &cache_server, &evaluation, &collection_server, &token).await?;
+    }
 
     Ok(())
 }

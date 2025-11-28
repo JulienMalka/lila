@@ -75,6 +75,7 @@ class Attestation(Base):
     user_id: Mapped[int] = mapped_column(ForeignKey("users.id"))
     drv_id: Mapped[str] = mapped_column(ForeignKey("derivations.id"))
     derivation: Mapped["Derivation"] = relationship(back_populates="attestations")
+    uploaded_at: Mapped[datetime.datetime | None] = mapped_column(DateTime, default=func.now())
     # data
     output_hash: Mapped[str] = mapped_column()
     output_sig: Mapped[str] = mapped_column()

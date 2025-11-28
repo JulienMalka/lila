@@ -44,6 +44,7 @@
               cargo
               gcc
               pkg-config
+              tailwindcss
             ];
             buildInputs = [
               (pkgs.python3.withPackages (ps: [

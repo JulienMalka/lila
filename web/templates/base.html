@@ -6,21 +6,10 @@
     <title>{% block title %}Lila - Reproducibility Tracker{% endblock %}</title>
 
     <!-- Tailwind CSS -->
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script>
-        tailwind.config = {
-            theme: {
-                extend: {
-                    colors: {
-                        'lila-blue': '#6586c8',
-                    }
-                }
-            }
-        }
-    </script>
+    <link rel="stylesheet" href="/static/css/tailwind.css">
 
     <!-- HTMX -->
-    <script src="https://unpkg.com/htmx.org@1.9.10"></script>
+    <script src="/static/js/htmx.min.js"></script>
 
     <!-- Custom CSS -->
     <link rel="stylesheet" href="/static/css/custom.css">

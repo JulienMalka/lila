@@ -21,11 +21,12 @@ def get_evaluation(
     evaluation = crud.get_evaluation(db, evaluation_id)
     if not evaluation:
         raise HTTPException(status_code=404, detail="Evaluation not found")
-    drvs = evaluation.derivations
-    derivations = []
-    for drv in drvs:
-        derivations.append(drv.derivation)
-    return {"id": evaluation.id, "derivations": derivations}
+    output_paths = [op.output_path for op in evaluation.output_paths]
+    return {
+        "id": evaluation.id,
+        "uploaded_at": evaluation.uploaded_at,
+        "output_paths": output_paths
+    }
 
 
 @router.get("", response_model=list[schemas.EvaluationResponse])

@@ -1,5 +1,6 @@
 from pydantic import BaseModel, RootModel
-from typing import Dict, List
+from typing import Dict, List, Optional
+from datetime import datetime
 
 class ReportLink(BaseModel):
     drv_regex: str
@@ -62,6 +63,39 @@ class DerivationAttestation(RootModel):
         }
     }
 
-class ReportDefinition(RootModel):
-    root: dict
+# Jobset schemas
+class JobsetCreate(BaseModel):
+    name: str
+    description: Optional[str] = None
+    enabled: bool = True
 
+class JobsetUpdate(BaseModel):
+    name: Optional[str] = None
+    description: Optional[str] = None
+    enabled: Optional[bool] = None
+
+class JobsetResponse(BaseModel):
+    id: int
+    name: str
+    description: Optional[str]
+    enabled: bool
+    created_at: datetime
+    updated_at: datetime
+
+    class Config:
+        from_attributes = True
+
+# Evaluation schemas
+class EvaluationResponse(BaseModel):
+    id: int
+
+    class Config:
+        from_attributes = True
+
+class EvaluationDetail(EvaluationResponse):
+    id: int
+    derivations: DerivationList
+
+
+class EvalDefinition(RootModel):
+    root: dict

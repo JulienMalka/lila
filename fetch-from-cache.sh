@@ -1,15 +1,15 @@
 #!/usr/bin/env bash
 
-REPORT=$1
+EVALUATION_ID=$1
 export HASH_COLLECTION_SERVER=http://localhost:8000
 
-if [ "x" == "x$REPORT" ]; then
-  echo "Usage: $0 <report-name>"
+if [ "x" == "x$EVALUATION_ID" ]; then
+  echo "Usage: $0 <evaluation-id>"
   exit 1
 fi
 
 while true; do
-  curl -H "Authorization: Bearer $HASH_COLLECTION_TOKEN" $HASH_COLLECTION_SERVER/reports/$REPORT/suggest | jq -c ".[] | pick(.out_path, .drv_path)" | head -50 | while read out
+  curl -H "Authorization: Bearer $HASH_COLLECTION_TOKEN" $HASH_COLLECTION_SERVER/api/evaluations/$EVALUATION_ID/suggest | jq -c ".[] | pick(.out_path, .drv_path)" | head -50 | while read out
   do
     OUT_PATH=$(echo $out | cut -d '"' -f 4)
     DRV_PATH=$(echo $out | cut -d '"' -f 8)

@@ -59,7 +59,7 @@ struct Next {
 async fn main() -> Result<()> {
     let collection_server = read_env_var_or_panic("HASH_COLLECTION_SERVER");
     let token = read_env_var_or_panic("HASH_COLLECTION_TOKEN");
-    let report = read_env_var_or_panic("HASH_COLLECTION_REPORT");
+    let evaluation_id = read_env_var_or_panic("HASH_COLLECTION_EVALUATION");
     let n_builders = read_env_var_or_panic("MAX_CORES").parse::<i32>().unwrap();
 
     let client = Client::builder().user_agent("lila/1.0").build()?;
@@ -97,7 +97,7 @@ async fn main() -> Result<()> {
                 reply_to.send(candidate).unwrap()
             }
             None => {
-                to_build = suggest(&client, &collection_server, &token, &report)
+                to_build = suggest(&client, &collection_server, &token, &evaluation_id)
                     .await?
                     .iter()
                     .filter(|x| !started.contains(&x.drv_path))

@@ -172,9 +172,9 @@ pub struct SuggestedRebuild {
     pub out_path: String,
 }
 
-pub async fn suggest(client: &Client, collection_server: &str, token: &str, report: &str) -> Result<Vec<SuggestedRebuild>> {
+pub async fn suggest(client: &Client, collection_server: &str, token: &str, evaluation_id: &str) -> Result<Vec<SuggestedRebuild>> {
     let suggestions = client
-        .get(format!("{0}/reports/{1}/suggest", collection_server, report))
+        .get(format!("{0}/api/evaluations/{1}/suggest", collection_server, evaluation_id))
         .bearer_auth(token)
         .send()
         .await.expect("Fetching suggested rebuilds")
@@ -185,7 +185,7 @@ pub async fn suggest(client: &Client, collection_server: &str, token: &str, repo
 
 pub async fn post(client: &Client, collection_server: &str, token: &str, drv_ident: &str, output_attestations: &Vec<OutputAttestation<'_>>) -> Result<()> {
     client
-        .post(format!("{0}/attestation/{1}", collection_server, drv_ident))
+        .post(format!("{0}/api/attestation/{1}", collection_server, drv_ident))
         .bearer_auth(token)
         .json(&output_attestations)
         .send()

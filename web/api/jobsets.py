@@ -90,32 +90,23 @@ def upload_evaluation(
     db: Session = Depends(get_db),
 ):
     """Upload a new evaluation for a jobset"""
-    from .. import models
-
     eval = crud.create_evaluation(db, jobset_id, definition)
-    # parse the sbom and populate derivation list
+    # parse the sbom and populate output path list
     components = definition["components"]
     for component in components:
-        drv_hash = None
+        out_path = None
         for prop in component["properties"]:
-            if prop["name"] == "nix:drv_path":
-                drv_hash = prop["value"].removeprefix("/nix/store/").removesuffix(".drv")
+            if prop["name"] == "nix:out_path":
+                out_path = prop["value"]
                 break
 
-        if drv_hash:
-            derivation = db.query(models.Derivation).filter_by(drv_hash=drv_hash).first()
-            if not derivation:
-                derivation = models.Derivation(drv_hash=drv_hash)
-                db.add(derivation)
-                db.commit()
-                db.refresh(derivation)
-
-            crud.add_evaluation_derivation(
+        if out_path:
+            crud.add_evaluation_output_path(
                 db,
                 evaluation_id=eval.id,
-                derivation_id=derivation.id,
+                output_path=out_path,
             )
-        
+
     return eval
 
 

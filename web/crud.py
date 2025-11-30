@@ -137,12 +137,12 @@ def list_evaluations(db: Session, jobset_id: int = None):
     return query.order_by(models.Evaluation.uploaded_at.desc()).all()
 
 
-def add_evaluation_derivation(db: Session, evaluation_id: int, derivation_id: int):
-    """Link a derivation to an evaluation"""
-    eval_drv = models.EvaluationDerivation(
+def add_evaluation_output_path(db: Session, evaluation_id: int, output_path: str):
+    """Link an output path to an evaluation"""
+    eval_output = models.EvaluationOutputPath(
         evaluation_id=evaluation_id,
-        derivation_id=derivation_id,
+        output_path=output_path,
     )
-    db.add(eval_drv)
+    db.add(eval_output)
     db.commit()
-    return eval_drv
+    return eval_output

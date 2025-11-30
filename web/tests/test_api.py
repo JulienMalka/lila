@@ -328,7 +328,6 @@ class TestSignatureEndpoints:
         try:
             att = models.Attestation(
                 drv_id=99999,  # Non-existent derivation
-                output_path="/nix/store/orphan123-package",
                 output_hash="sha256:orphanhash",
                 output_digest="orphan123",
                 output_name="package",
@@ -572,37 +571,41 @@ class TestJobsetEndpoints:
 
 class TestEvalEndpoints:
     def test_upload_eval(self, client, test_user):
-        """Test deleting jobset without authentication fails"""
+        """Test uploading an evaluation creates output path records"""
         # Create jobset
         import json
         import random
         with open(Path(__file__).parent / "fixtures/sbom.cdx.json") as f:
             sbom = json.load(f)
 
-                
+
         jobset_data = {"name": "test"}
         create_response = client.post(
             "/api/jobsets",
             json=jobset_data,
             headers={"Authorization": f"Bearer {test_user['token']}"}
         )
-        
+
         response = client.put(
             "/api/jobsets/1/upload-evaluation",
             json=sbom,
             headers={"Authorization": f"Bearer {test_user['token']}"}
         )
-    
+
         assert response.status_code == 200
+        eval_id = response.json()["id"]
 
-        random_drv = random.sample(sbom["components"], 1)[0]
-        print(random_drv)
-        for elem in random_drv["properties"]:
-            if elem["name"] == "nix:drv_path":
-                drv_hash = elem["value"].removeprefix("/nix/store/").removesuffix(".drv")
+        # Check that evaluation details include output paths
+        eval_response = client.get(f"/api/evaluations/{eval_id}")
+        assert eval_response.status_code == 200
+        eval_data = eval_response.json()
+        assert "output_paths" in eval_data
+        assert len(eval_data["output_paths"]) > 0
 
-        query_drv_response = client.get(
-            f"/api/derivations/{drv_hash}",
-        )
-
-        assert query_drv_response.status_code == 200
+        # Verify a random output path from the SBOM is in the evaluation
+        random_component = random.sample(sbom["components"], 1)[0]
+        for elem in random_component["properties"]:
+            if elem["name"] == "nix:out_path":
+                out_path = elem["value"]
+                assert out_path in eval_data["output_paths"]
+                break

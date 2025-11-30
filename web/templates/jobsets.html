@@ -7,7 +7,6 @@
   <!-- Header -->
   <div class="mb-8">
     <h1 class="text-3xl font-bold text-gray-900 mb-2">Jobsets</h1>
-    <p class="text-gray-600">Automated Nix evaluations</p>
   </div>
 
   <!-- Jobsets List -->
@@ -45,8 +44,8 @@
           </td>
           <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
             {% if jobset.latest_eval %}
-            <a href="/evaluations/{{ jobset.latest_eval.id }}" class="text-blue-600 hover:text-blue-800">
-              #{{ jobset.latest_eval.id }}
+            <a href="/evaluations/{{ jobset.id }}/{{ jobset.latest_eval.git_revision }}" class="text-blue-600 hover:text-blue-800 font-mono">
+              {{ jobset.latest_eval.git_revision[:12] }}
               <span class="text-gray-400">({{ jobset.latest_eval.uploaded_at.strftime('%Y-%m-%d') if jobset.latest_eval.uploaded_at else '-' }})</span>
             </a>
             {% else %}

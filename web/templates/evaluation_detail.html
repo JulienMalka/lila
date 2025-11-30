@@ -17,14 +17,14 @@
   <div class="mb-8">
     <div class="flex items-start justify-between mb-4">
       <div>
-        <h1 class="text-3xl font-bold text-gray-900 mb-2">Evaluation #{{ evaluation.id }}</h1>
+        <h1 class="text-3xl font-bold text-gray-900 mb-2">Evaluation #{{ evaluation.id }} <span class="text-lg font-normal text-gray-500 font-mono">{{ evaluation.git_revision[:12] }}</span></h1>
         <p class="text-gray-600">
           Jobset: <a href="/jobsets/{{ evaluation.jobset.id }}" class="text-blue-600 hover:text-blue-800">{{ evaluation.jobset.name }}</a>
           <span class="mx-2">•</span>
           <span class="text-gray-500">{{ evaluation.uploaded_at.strftime('%Y-%m-%d at %H:%M') if evaluation.uploaded_at else '-' }}</span>
         </p>
       </div>
-      <a href="/evaluations/{{ evaluation.id }}/tree" class="inline-flex items-center px-4 py-2 bg-lila-blue text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors">
+      <a href="/evaluations/{{ evaluation.jobset_id }}/{{ evaluation.git_revision }}/tree" class="inline-flex items-center px-4 py-2 bg-lila-blue text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors">
         <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 10h16M4 14h16M4 18h16"></path>
         </svg>
@@ -37,7 +37,7 @@
   <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
     <div class="bg-white rounded-lg shadow p-5">
       <h3 class="text-gray-500 text-xs font-medium uppercase tracking-wider mb-1">Total</h3>
-      <p class="text-2xl font-bold text-gray-900">{{ derivations|length }}</p>
+      <p class="text-2xl font-bold text-gray-900">{{ output_paths|length }}</p>
     </div>
 
     <div class="bg-white rounded-lg shadow p-5 border-l-4 border-green-500">
@@ -57,18 +57,18 @@
   </div>
 
   <!-- Progress Bar -->
-  {% if derivations|length > 0 %}
+  {% if output_paths|length > 0 %}
   <div class="bg-white rounded-lg shadow p-6 mb-8">
     <h3 class="text-sm font-medium text-gray-700 mb-3">Reproducibility Overview</h3>
     <div class="w-full h-4 bg-gray-200 rounded-full overflow-hidden flex">
       {% if stats_summary.reproducible > 0 %}
-      <div class="bg-green-500 h-full" style="width: {{ (stats_summary.reproducible / derivations|length * 100)|round(1) }}%"></div>
+      <div class="bg-green-500 h-full" style="width: {{ (stats_summary.reproducible / output_paths|length * 100)|round(1) }}%"></div>
       {% endif %}
       {% if stats_summary.not_reproducible > 0 %}
-      <div class="bg-red-500 h-full" style="width: {{ (stats_summary.not_reproducible / derivations|length * 100)|round(1) }}%"></div>
+      <div class="bg-red-500 h-full" style="width: {{ (stats_summary.not_reproducible / output_paths|length * 100)|round(1) }}%"></div>
       {% endif %}
       {% if stats_summary.pending > 0 %}
-      <div class="bg-gray-300 h-full" style="width: {{ (stats_summary.pending / derivations|length * 100)|round(1) }}%"></div>
+      <div class="bg-gray-300 h-full" style="width: {{ (stats_summary.pending / output_paths|length * 100)|round(1) }}%"></div>
       {% endif %}
     </div>
     <div class="flex justify-between mt-2 text-xs text-gray-500">
@@ -78,30 +78,30 @@
         <span class="flex items-center gap-1"><span class="w-3 h-3 bg-gray-300 rounded-full inline-block"></span> Pending</span>
       </div>
       {% set verified = stats_summary.reproducible + stats_summary.not_reproducible %}
-      <span>{{ verified }} of {{ derivations|length }} verified</span>
+      <span>{{ verified }} of {{ output_paths|length }} verified</span>
     </div>
   </div>
   {% endif %}
 
-  <!-- Derivations List -->
+  <!-- Output Paths List -->
   <div class="bg-white rounded-lg shadow overflow-hidden">
     <div class="px-6 py-4 border-b border-gray-200">
-      <h2 class="text-xl font-semibold text-gray-900">Derivations</h2>
+      <h2 class="text-xl font-semibold text-gray-900">Output Paths</h2>
     </div>
 
-    {% if derivations %}
+    {% if output_paths %}
     <div class="overflow-x-auto">
       <table class="min-w-full divide-y divide-gray-200">
         <thead class="bg-gray-50">
           <tr>
             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Derivation Hash</th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Output Path</th>
             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Attestations</th>
             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Unique Hashes</th>
           </tr>
         </thead>
         <tbody class="bg-white divide-y divide-gray-200">
-          {% for item in derivations %}
+          {% for item in output_paths %}
           <tr class="hover:bg-gray-50">
             <td class="px-6 py-4 whitespace-nowrap">
               {% if item.status == "reproducible" %}
@@ -122,10 +122,34 @@
               {% endif %}
             </td>
             <td class="px-6 py-4">
-              <div class="flex items-center gap-2">
-                <a href="/derivations/{{ item.derivation.drv_hash }}" class="text-blue-600 hover:text-blue-800 font-mono text-sm">
-                  {{ item.derivation.drv_hash }}
+              <div class="flex flex-wrap items-start gap-2">
+                {% if item.attestation_count > 0 %}
+                <a href="/outputs/{{ item.output_path.replace('/nix/store/', '') }}" class="text-blue-600 hover:text-blue-800 font-mono text-sm break-all">
+                  {{ item.output_path }}
                 </a>
+                {% else %}
+                <span class="text-gray-900 font-mono text-sm break-all">
+                  {{ item.output_path }}
+                </span>
+                {% endif %}
+                {% if item.multi_drv %}
+                <span class="relative group">
+                  <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-purple-100 text-purple-800 cursor-help">
+                    <svg class="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                      <path d="M9 2a1 1 0 000 2h2a1 1 0 100-2H9z"></path>
+                      <path fill-rule="evenodd" d="M4 5a2 2 0 012-2 3 3 0 003 3h2a3 3 0 003-3 2 2 0 012 2v11a2 2 0 01-2 2H6a2 2 0 01-2-2V5zm3 4a1 1 0 000 2h.01a1 1 0 100-2H7zm3 0a1 1 0 000 2h3a1 1 0 100-2h-3zm-3 4a1 1 0 100 2h.01a1 1 0 100-2H7zm3 0a1 1 0 100 2h3a1 1 0 100-2h-3z" clip-rule="evenodd"></path>
+                    </svg>
+                    {{ item.drv_count }} drvs
+                  </span>
+                  <div class="absolute left-0 bottom-full hidden group-hover:block z-10">
+                    <div class="pb-2">
+                      <div class="bg-gray-900 text-white text-xs rounded py-2 px-3 whitespace-nowrap shadow-lg">
+                        This output path has attestations from {{ item.drv_count }} different derivations
+                      </div>
+                    </div>
+                  </div>
+                </span>
+                {% endif %}
                 {% if item.matching_links %}
                 <span class="relative group">
                   <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-orange-100 text-orange-800 cursor-help">
@@ -174,8 +198,8 @@
       <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4" />
       </svg>
-      <h3 class="mt-2 text-sm font-medium text-gray-900">No derivations</h3>
-      <p class="mt-1 text-sm text-gray-500">This evaluation has no derivations.</p>
+      <h3 class="mt-2 text-sm font-medium text-gray-900">No output paths</h3>
+      <p class="mt-1 text-sm text-gray-500">This evaluation has no output paths.</p>
     </div>
     {% endif %}
   </div>

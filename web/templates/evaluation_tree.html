@@ -10,7 +10,7 @@
     <span class="mx-2">›</span>
     <a href="/jobsets/{{ evaluation.jobset.id }}" class="hover:text-blue-600">{{ evaluation.jobset.name }}</a>
     <span class="mx-2">›</span>
-    <a href="/evaluations/{{ evaluation.id }}" class="hover:text-blue-600">#{{ evaluation.id }}</a>
+    <a href="/evaluations/{{ evaluation.jobset_id }}/{{ evaluation.git_revision }}" class="hover:text-blue-600">#{{ evaluation.id }}</a>
     <span class="mx-2">›</span>
     <span class="text-gray-900 font-medium">Dependency Tree</span>
   </nav>
@@ -21,13 +21,13 @@
       <div>
         <h1 class="text-3xl font-bold text-gray-900 mb-2">Dependency Tree</h1>
         <p class="text-gray-600">
-          Evaluation #{{ evaluation.id }} from
+          Evaluation #{{ evaluation.id }} <span class="font-mono text-gray-500">({{ evaluation.git_revision[:12] }})</span> from
           <a href="/jobsets/{{ evaluation.jobset.id }}" class="text-blue-600 hover:text-blue-800">{{ evaluation.jobset.name }}</a>
           <span class="mx-2">•</span>
           <span class="text-gray-500">{{ evaluation.uploaded_at.strftime('%Y-%m-%d at %H:%M') if evaluation.uploaded_at else '-' }}</span>
         </p>
       </div>
-      <a href="/evaluations/{{ evaluation.id }}" class="inline-flex items-center px-4 py-2 bg-gray-100 text-gray-700 text-sm font-medium rounded-lg hover:bg-gray-200 transition-colors">
+      <a href="/evaluations/{{ evaluation.jobset_id }}/{{ evaluation.git_revision }}" class="inline-flex items-center px-4 py-2 bg-gray-100 text-gray-700 text-sm font-medium rounded-lg hover:bg-gray-200 transition-colors">
         <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
         </svg>

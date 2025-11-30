@@ -109,15 +109,16 @@ async def get_derivation_detail(
     overall_status = get_derivation_status(derivation.attestations)
     reproducibility_status = overall_status["status"]
 
-    # Get evaluations this derivation appears in
-    eval_derivations = (
-        db.query(models.EvaluationDerivation)
+    # Get evaluations that contain output paths from this derivation's attestations
+    output_paths_for_drv = [a.output_path for a, u in attestations]
+    eval_output_paths = (
+        db.query(models.EvaluationOutputPath)
         .join(models.Evaluation)
         .join(models.Jobset)
-        .filter(models.EvaluationDerivation.derivation_id == derivation.id)
+        .filter(models.EvaluationOutputPath.output_path.in_(output_paths_for_drv))
         .order_by(models.Evaluation.uploaded_at.desc())
         .all()
-    )
+    ) if output_paths_for_drv else []
 
     # Get matching link patterns
     link_patterns = db.query(models.LinkPattern).all()
@@ -131,6 +132,6 @@ async def get_derivation_detail(
         "total_attestations": total_attestations,
         "unique_users": unique_users,
         "reproducibility_status": reproducibility_status,
-        "evaluations": eval_derivations,
+        "evaluations": eval_output_paths,
         "matching_links": matching_links
     })

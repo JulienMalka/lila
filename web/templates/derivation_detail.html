@@ -8,12 +8,12 @@
   <nav class="mb-6 text-sm text-gray-600">
     <a href="/derivations" class="hover:text-blue-600">Derivations</a>
     <span class="mx-2">›</span>
-    <span class="text-gray-900 font-medium">{{ derivation.drv_hash }}</span>
+    <span class="text-gray-900 font-medium">{{ derivation.drv_hash }}.drv</span>
   </nav>
 
   <!-- Header -->
   <div class="mb-8">
-    <h1 class="text-2xl font-bold text-gray-900 mb-2 break-all">{{ derivation.drv_hash }}</h1>
+    <h1 class="text-2xl font-bold text-gray-900 mb-2 break-all">{{ derivation.drv_hash }}.drv</h1>
     <div class="flex items-center gap-4 mb-4">
       <!-- Reproducibility Status Badge -->
       {% if reproducibility_status == "reproducible" %}

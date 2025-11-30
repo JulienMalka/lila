@@ -2,6 +2,7 @@
 Jobset API routes
 """
 from fastapi import APIRouter, Depends, HTTPException
+from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
 from .. import crud, schemas
@@ -82,17 +83,30 @@ def delete_jobset(
     return {"message": "Jobset deleted"}
 
 
+class EvaluationUpload(BaseModel):
+    git_revision: str
+    definition: dict
+
+
 @router.put("/{jobset_id}/upload-evaluation", response_model=schemas.EvaluationResponse)
 def upload_evaluation(
     jobset_id: int,
-    definition: dict,
+    body: EvaluationUpload,
     user_id: int = Depends(get_user),
     db: Session = Depends(get_db),
 ):
     """Upload a new evaluation for a jobset"""
-    eval = crud.create_evaluation(db, jobset_id, definition)
+    # Check if evaluation with this revision already exists
+    existing = crud.get_evaluation_by_revision(db, jobset_id, body.git_revision)
+    if existing:
+        raise HTTPException(
+            status_code=409,
+            detail=f"Evaluation with revision '{body.git_revision}' already exists for this jobset"
+        )
+
+    eval = crud.create_evaluation(db, jobset_id, body.git_revision, body.definition)
     # parse the sbom and populate output path list
-    components = definition["components"]
+    components = body.definition["components"]
     for component in components:
         out_path = None
         for prop in component["properties"]:

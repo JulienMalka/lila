@@ -25,6 +25,7 @@ def get_evaluation(
     return {
         "id": evaluation.id,
         "uploaded_at": evaluation.uploaded_at,
+        "git_revision": evaluation.git_revision,
         "output_paths": output_paths
     }
 

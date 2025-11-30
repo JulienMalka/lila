@@ -378,7 +378,7 @@ class TestJobsetEndpoints:
 
         response = client.put(
             f"/api/jobsets/{test_jobset['id']}/upload-evaluation",
-            json=sbom,
+            json={"git_revision": "abc123def", "definition": sbom},
             headers={"Authorization": f"Bearer {test_user['token']}"}
         )
         assert response.status_code == 200
@@ -588,7 +588,7 @@ class TestEvalEndpoints:
 
         response = client.put(
             "/api/jobsets/1/upload-evaluation",
-            json=sbom,
+            json={"git_revision": "test123rev", "definition": sbom},
             headers={"Authorization": f"Bearer {test_user['token']}"}
         )
 

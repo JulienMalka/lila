@@ -115,17 +115,26 @@ def delete_jobset(db: Session, jobset_id: int):
     return True
 
 # Evaluation CRUD operations
-def create_evaluation(db: Session, jobset_id: int, definition_sbom):
+def create_evaluation(db: Session, jobset_id: int, git_revision: str, definition_sbom):
     """Create a new evaluation for a jobset"""
 
     evaluation = models.Evaluation(
         jobset_id=jobset_id,
+        git_revision=git_revision,
         definition_sbom=json.dumps(definition_sbom)
     )
     db.add(evaluation)
     db.commit()
     db.refresh(evaluation)
     return evaluation
+
+
+def get_evaluation_by_revision(db: Session, jobset_id: int, git_revision: str):
+    """Get an evaluation by jobset and git revision"""
+    return db.query(models.Evaluation).filter_by(
+        jobset_id=jobset_id,
+        git_revision=git_revision
+    ).one_or_none()
 
 def get_evaluation(db: Session, evaluation_id: int):
     return db.query(models.Evaluation).filter_by(id=evaluation_id).one_or_none()

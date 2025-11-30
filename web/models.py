@@ -107,9 +107,13 @@ class Jobset(Base):
 
 class Evaluation(Base):
     __tablename__ = "evaluations"
+    __table_args__ = (
+        UniqueConstraint('jobset_id', 'git_revision', name='uq_evaluation_jobset_revision'),
+    )
 
     id: Mapped[int] = mapped_column(primary_key=True)
     jobset_id: Mapped[int] = mapped_column(ForeignKey("jobsets.id"), index=True)
+    git_revision: Mapped[str] = mapped_column(index=True)
 
     # Evaluation metadata
     uploaded_at: Mapped[datetime.datetime] = mapped_column(default=datetime.datetime.utcnow)

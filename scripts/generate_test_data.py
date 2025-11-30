@@ -134,6 +134,11 @@ def random_version():
     return f"{major}.{minor}.{patch}"
 
 
+def random_git_revision():
+    """Generate a random git commit hash."""
+    return hashlib.sha1(random.randbytes(20)).hexdigest()
+
+
 def generate_cyclonedx_sbom(derivations_data):
     """
     Generate a CycloneDX SBOM structure for an evaluation.
@@ -336,6 +341,7 @@ def main():
             # Create evaluation with SBOM
             evaluation = models.Evaluation(
                 jobset_id=jobset.id,
+                git_revision=random_git_revision(),
                 definition_sbom=json.dumps(sbom),
                 uploaded_at=upload_date,
             )
@@ -343,9 +349,17 @@ def main():
             session.commit()
             total_evaluations += 1
 
-            # Now create the actual derivations and link them to the evaluation
+            # Now create the output path links and derivations for attestations
             for package_name, version, drv_hash, output_paths in derivations_data:
-                # Check if derivation already exists
+                # Create evaluation-output path relationships for each output
+                for output_key, output_path in output_paths.items():
+                    eval_out = models.EvaluationOutputPath(
+                        evaluation_id=evaluation.id,
+                        output_path=output_path,
+                    )
+                    session.add(eval_out)
+
+                # Check if derivation already exists (still needed for attestations)
                 derivation = session.query(models.Derivation).filter_by(
                     drv_hash=drv_hash
                 ).first()
@@ -356,12 +370,6 @@ def main():
                     session.commit()
                     total_derivations += 1
 
-                # Create evaluation-derivation relationship
-                eval_drv = models.EvaluationDerivation(
-                    evaluation_id=evaluation.id,
-                    derivation_id=derivation.id,
-                )
-                session.add(eval_drv)
                 eval_derivations.append((derivation, output_paths))
 
                 # Generate attestations for each output (each output has independent reproducibility)
@@ -395,7 +403,6 @@ def main():
                                 output_digest=output_digest,
                                 output_name=output_name,
                                 output_hash=output_hash,
-                                output_path=output_path,
                                 output_sig=random_signature(user.name),
                             )
                             session.add(attestation)

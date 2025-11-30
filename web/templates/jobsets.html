@@ -1,0 +1,68 @@
+{% extends "base.html" %}
+
+{% block title %}Jobsets - Lila{% endblock %}
+
+{% block content %}
+<div class="px-4 py-8">
+  <!-- Header -->
+  <div class="mb-8">
+    <h1 class="text-3xl font-bold text-gray-900 mb-2">Jobsets</h1>
+    <p class="text-gray-600">Automated Nix evaluations</p>
+  </div>
+
+  <!-- Jobsets List -->
+  <div class="bg-white rounded-lg shadow overflow-hidden">
+    <table class="min-w-full divide-y divide-gray-200">
+      <thead class="bg-gray-50">
+        <tr>
+          <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
+          <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Description</th>
+          <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+          <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Latest Eval</th>
+        </tr>
+      </thead>
+      <tbody id="jobsets-tbody" class="bg-white divide-y divide-gray-200">
+        {% for jobset in jobsets %}
+        <tr id="jobset-{{ jobset.id }}">
+          <td class="px-6 py-4 whitespace-nowrap">
+            <a href="/jobsets/{{ jobset.id }}" class="text-blue-600 hover:text-blue-800 font-medium">
+              {{ jobset.name }}
+            </a>
+          </td>
+          <td class="px-6 py-4">
+            <span class="text-sm text-gray-700">{{ jobset.description or '-' }}</span>
+          </td>
+          <td class="px-6 py-4 whitespace-nowrap">
+            {% if jobset.enabled %}
+            <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
+              Enabled
+            </span>
+            {% else %}
+            <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-gray-100 text-gray-800">
+              Disabled
+            </span>
+            {% endif %}
+          </td>
+          <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+            {% if jobset.latest_eval %}
+            <a href="/evaluations/{{ jobset.latest_eval.id }}" class="text-blue-600 hover:text-blue-800">
+              #{{ jobset.latest_eval.id }}
+              <span class="text-gray-400">({{ jobset.latest_eval.uploaded_at.strftime('%Y-%m-%d') if jobset.latest_eval.uploaded_at else '-' }})</span>
+            </a>
+            {% else %}
+            <span class="text-gray-400">No evaluations</span>
+            {% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+
+    {% if not jobsets %}
+    <div class="text-center py-12">
+      <p class="text-gray-500">No jobsets yet</p>
+    </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

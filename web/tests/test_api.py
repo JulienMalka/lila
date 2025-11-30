@@ -8,7 +8,8 @@ from alembic import command
 from alembic.config import Config
 from pathlib import Path
 
-from web import app, models, get_db
+from web import app, models
+from web.common import get_db
 from web.db import Base
 
 

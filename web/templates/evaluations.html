@@ -1,0 +1,61 @@
+{% extends "base.html" %}
+
+{% block title %}Evaluations - Lila{% endblock %}
+
+{% block content %}
+<div class="px-4 py-8">
+  <!-- Header -->
+  <div class="mb-8">
+    <h1 class="text-3xl font-bold text-gray-900 mb-2">Evaluations</h1>
+    <p class="text-gray-600">History of all jobset evaluations</p>
+  </div>
+
+  <!-- Evaluations List -->
+  <div class="bg-white rounded-lg shadow overflow-hidden">
+    <table class="min-w-full divide-y divide-gray-200">
+      <thead class="bg-gray-50">
+        <tr>
+          <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Eval #</th>
+          <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Jobset</th>
+          <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Uploaded</th>
+        </tr>
+      </thead>
+      <tbody class="bg-white divide-y divide-gray-200">
+        {% for eval in evaluations %}
+        <tr class="hover:bg-gray-50">
+          <td class="px-6 py-4 whitespace-nowrap">
+            <a href="/evaluations/{{ eval.id }}" class="text-blue-600 hover:text-blue-800 font-medium">
+              #{{ eval.id }}
+            </a>
+          </td>
+          <td class="px-6 py-4 whitespace-nowrap">
+            <a href="/jobsets/{{ eval.jobset.id }}" class="text-blue-600 hover:text-blue-800">
+              {{ eval.jobset.name }}
+            </a>
+          </td>
+          <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+            {{ eval.uploaded_at.strftime('%Y-%m-%d %H:%M:%S') if eval.uploaded_at else '-' }}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+
+    {% if not evaluations %}
+    <div class="text-center py-12">
+      <p class="text-gray-500 mb-4">No evaluations yet</p>
+      <a href="/jobsets" class="text-blue-600 hover:text-blue-800 font-medium">
+        Go to jobsets to trigger an evaluation
+      </a>
+    </div>
+    {% endif %}
+  </div>
+
+  <!-- Pagination (TODO) -->
+  <div class="mt-6 flex justify-between items-center">
+    <div class="text-sm text-gray-600">
+      Showing {{ evaluations|length }} evaluations
+    </div>
+  </div>
+</div>
+{% endblock %}

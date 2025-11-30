@@ -1,0 +1,133 @@
+{% extends "base.html" %}
+
+{% block title %}Evaluation #{{ evaluation.id }} - Dependency Tree - Lila{% endblock %}
+
+{% block content %}
+<div class="px-4 py-8">
+  <!-- Breadcrumb -->
+  <nav class="mb-6 text-sm text-gray-600">
+    <a href="/evaluations" class="hover:text-blue-600">Evaluations</a>
+    <span class="mx-2">›</span>
+    <a href="/jobsets/{{ evaluation.jobset.id }}" class="hover:text-blue-600">{{ evaluation.jobset.name }}</a>
+    <span class="mx-2">›</span>
+    <a href="/evaluations/{{ evaluation.id }}" class="hover:text-blue-600">#{{ evaluation.id }}</a>
+    <span class="mx-2">›</span>
+    <span class="text-gray-900 font-medium">Dependency Tree</span>
+  </nav>
+
+  <!-- Header -->
+  <div class="mb-8">
+    <div class="flex items-start justify-between mb-4">
+      <div>
+        <h1 class="text-3xl font-bold text-gray-900 mb-2">Dependency Tree</h1>
+        <p class="text-gray-600">
+          Evaluation #{{ evaluation.id }} from
+          <a href="/jobsets/{{ evaluation.jobset.id }}" class="text-blue-600 hover:text-blue-800">{{ evaluation.jobset.name }}</a>
+          <span class="mx-2">•</span>
+          <span class="text-gray-500">{{ evaluation.uploaded_at.strftime('%Y-%m-%d at %H:%M') if evaluation.uploaded_at else '-' }}</span>
+        </p>
+      </div>
+      <a href="/evaluations/{{ evaluation.id }}" class="inline-flex items-center px-4 py-2 bg-gray-100 text-gray-700 text-sm font-medium rounded-lg hover:bg-gray-200 transition-colors">
+        <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
+        </svg>
+        Back to List View
+      </a>
+    </div>
+  </div>
+
+  <!-- Statistics Cards -->
+  <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+    <div class="bg-white rounded-lg shadow p-5">
+      <h3 class="text-gray-500 text-xs font-medium uppercase tracking-wider mb-1">Total</h3>
+      <p class="text-2xl font-bold text-gray-900">{{ stats.total }}</p>
+    </div>
+
+    <div class="bg-white rounded-lg shadow p-5 border-l-4 border-green-500">
+      <h3 class="text-gray-500 text-xs font-medium uppercase tracking-wider mb-1">Reproducible</h3>
+      <p class="text-2xl font-bold text-green-600">{{ stats.reproducible }}</p>
+      {% if stats.total > 0 %}
+      <p class="text-xs text-gray-500 mt-1">{{ (stats.reproducible / stats.total * 100)|round(1) }}%</p>
+      {% endif %}
+    </div>
+
+    <div class="bg-white rounded-lg shadow p-5 border-l-4 border-red-500">
+      <h3 class="text-gray-500 text-xs font-medium uppercase tracking-wider mb-1">Not Reproducible</h3>
+      <p class="text-2xl font-bold text-red-600">{{ stats.not_reproducible }}</p>
+      {% if stats.total > 0 %}
+      <p class="text-xs text-gray-500 mt-1">{{ (stats.not_reproducible / stats.total * 100)|round(1) }}%</p>
+      {% endif %}
+    </div>
+
+    <div class="bg-white rounded-lg shadow p-5 border-l-4 border-gray-300">
+      <h3 class="text-gray-500 text-xs font-medium uppercase tracking-wider mb-1">Pending</h3>
+      <p class="text-2xl font-bold text-gray-500">{{ stats.pending }}</p>
+      {% if stats.total > 0 %}
+      <p class="text-xs text-gray-500 mt-1">{{ (stats.pending / stats.total * 100)|round(1) }}%</p>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- Progress Bar -->
+  {% if stats.total > 0 %}
+  <div class="bg-white rounded-lg shadow p-6 mb-8">
+    <h3 class="text-sm font-medium text-gray-700 mb-3">Reproducibility Overview</h3>
+    <div class="w-full h-4 bg-gray-200 rounded-full overflow-hidden flex">
+      {% if stats.reproducible > 0 %}
+      <div class="bg-green-500 h-full" style="width: {{ (stats.reproducible / stats.total * 100)|round(1) }}%"></div>
+      {% endif %}
+      {% if stats.not_reproducible > 0 %}
+      <div class="bg-red-500 h-full" style="width: {{ (stats.not_reproducible / stats.total * 100)|round(1) }}%"></div>
+      {% endif %}
+      {% if stats.pending > 0 %}
+      <div class="bg-gray-300 h-full" style="width: {{ (stats.pending / stats.total * 100)|round(1) }}%"></div>
+      {% endif %}
+    </div>
+    <div class="flex justify-between mt-2 text-xs text-gray-500">
+      <div class="flex gap-4">
+        <span class="flex items-center gap-1"><span class="w-3 h-3 bg-green-500 rounded-full inline-block"></span> Reproducible</span>
+        <span class="flex items-center gap-1"><span class="w-3 h-3 bg-red-500 rounded-full inline-block"></span> Not Reproducible</span>
+        <span class="flex items-center gap-1"><span class="w-3 h-3 bg-gray-300 rounded-full inline-block"></span> Pending</span>
+      </div>
+      {% set verified = stats.reproducible + stats.not_reproducible %}
+      <span>{{ verified }} of {{ stats.total }} verified</span>
+    </div>
+  </div>
+  {% endif %}
+
+  <!-- Tree View -->
+  <div class="bg-white rounded-lg shadow overflow-hidden">
+    <div class="px-6 py-4 border-b border-gray-200">
+      <h2 class="text-xl font-semibold text-gray-900">Dependency Tree</h2>
+    </div>
+
+    <div class="p-6">
+      <!-- Legend -->
+      <div class="mb-6 flex flex-wrap gap-4 text-sm text-gray-600">
+        <span class="flex items-center gap-1">
+          <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">✅</span>
+          Successfully reproduced
+        </span>
+        <span class="flex items-center gap-1">
+          <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">❌</span>
+          Not reproducible
+        </span>
+        <span class="flex items-center gap-1">
+          <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-600">❔</span>
+          Pending verification
+        </span>
+      </div>
+
+      <!-- Tree -->
+      <ul class="tree">
+        <li>
+          <details open>
+            {{ tree_html|safe }}
+          </details>
+        </li>
+      </ul>
+    </div>
+  </div>
+</div>
+{% endblock %}
+

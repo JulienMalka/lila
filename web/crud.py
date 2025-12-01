@@ -50,9 +50,7 @@ def suggest(db: Session, elements, user_id):
         for attestation in db.query(models.Attestation).filter(models.Attestation.output_path.in_(candidates)).filter_by(user_id=user_id).all():
             if attestation.output_path in candidates:
                 candidates.remove(attestation.output_path)
-    # TODO don't consider attestations that have been built twice by the same user
-    # as 'rebuilt'
-    stmt = select(models.Attestation.output_path).where(models.Attestation.output_path.in_(candidates)).group_by(models.Attestation.output_path).having(func.count(models.Attestation.id) > 1)
+    stmt = select(models.Attestation.output_path).where(models.Attestation.output_path.in_(candidates)).group_by(models.Attestation.output_path).having(func.count(models.Attestation.user_id.distinct()) > 1)
     for row in db.execute(stmt):
         candidates.remove(row._mapping['output_path'])
     return { candidate: elements[candidate] for candidate in candidates }

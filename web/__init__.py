@@ -9,7 +9,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 # Import routers
 from .api import attestations, derivations, evaluations, jobsets, link_patterns, signatures
-from .views import home, jobsets as jobsets_views, evaluations as evaluations_views, derivations as derivations_views
+from .views import home, jobsets as jobsets_views, evaluations as evaluations_views, derivations as derivations_views, outputs as outputs_views
 
 app = FastAPI(
     title="Lila",
@@ -39,6 +39,7 @@ app.include_router(home.router)
 app.include_router(jobsets_views.router, prefix="/jobsets")
 app.include_router(evaluations_views.router, prefix="/evaluations")
 app.include_router(derivations_views.router, prefix="/derivations")
+app.include_router(outputs_views.router, prefix="/outputs")
 
 # Include API routers (JSON)
 app.include_router(

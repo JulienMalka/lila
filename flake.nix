@@ -55,7 +55,7 @@
                 ps.pytest
                 ps.httpx
                 ps.alembic
-
+                ps.psycopg2
                 ps.uvicorn
               ]))
               pkgs.jq

@@ -88,13 +88,14 @@ class JobsetResponse(BaseModel):
 # Evaluation schemas
 class EvaluationResponse(BaseModel):
     id: int
+    uploaded_at: Optional[datetime] = None
 
     class Config:
         from_attributes = True
 
 class EvaluationDetail(EvaluationResponse):
     id: int
-    derivations: DerivationList
+    output_paths: List[str]
 
 
 class EvalDefinition(RootModel):

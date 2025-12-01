@@ -7,7 +7,7 @@
   <!-- Hero Section -->
   <div class="mb-12 text-center">
     <h1 class="text-4xl font-bold text-gray-900 mb-4">Lila</h1>
-    <p class="text-xl text-gray-600 mb-2">NixOS Reproducible Builds Tracker</p>
+    <p class="text-xl text-gray-600 mb-2">Nix Reproducible Builds Tracker</p>
     <p class="text-gray-500">Track and verify reproducibility of Nix derivations</p>
   </div>
 
@@ -57,8 +57,8 @@
             {% endif %}
             <div class="mt-2 flex items-center gap-4">
               {% if jobset.latest_eval %}
-              <a href="/evaluations/{{ jobset.latest_eval.id }}" class="text-xs text-gray-500 hover:text-blue-600">
-                Latest: #{{ jobset.latest_eval.id }}
+              <a href="/evaluations/{{ jobset.id }}/{{ jobset.latest_eval.git_revision }}" class="text-xs text-gray-500 hover:text-blue-600 font-mono">
+                Latest: {{ jobset.latest_eval.git_revision[:12] }}
                 <span class="text-gray-400">({{ jobset.latest_eval.uploaded_at.strftime('%Y-%m-%d') if jobset.latest_eval.uploaded_at else '-' }})</span>
               </a>
               {% else %}

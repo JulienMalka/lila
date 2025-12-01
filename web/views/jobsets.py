@@ -7,7 +7,7 @@ from fastapi import APIRouter, Depends, HTTPException, Request
 from sqlalchemy.orm import Session
 
 from .. import models
-from ..common import get_db, templates, get_derivation_status
+from ..common import get_db, templates, get_evaluation_output_paths, fetch_attestations_grouped, calculate_output_path_stats
 
 router = APIRouter()
 
@@ -66,19 +66,10 @@ async def get_jobset_detail(
     }
 
     for idx, evaluation in enumerate(evaluations, 1):
-        # Get derivations for this evaluation
-        eval_derivations = (
-            db.query(models.EvaluationDerivation)
-            .filter(models.EvaluationDerivation.evaluation_id == evaluation.id)
-            .all()
-        )
-
-        stats = {"reproducible": 0, "not_reproducible": 0, "pending": 0}
-        for eval_drv in eval_derivations:
-            drv_status = get_derivation_status(eval_drv.derivation.attestations)
-            stats[drv_status["status"]] += 1
-
-        total = len(eval_derivations)
+        output_path_list = get_evaluation_output_paths(db, evaluation.id)
+        total = len(output_path_list)
+        attestations_by_path = fetch_attestations_grouped(db, output_path_list)
+        stats = calculate_output_path_stats(attestations_by_path, output_path_list)
 
         eval_stats.append({
             "evaluation": evaluation,

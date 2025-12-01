@@ -115,17 +115,26 @@ def delete_jobset(db: Session, jobset_id: int):
     return True
 
 # Evaluation CRUD operations
-def create_evaluation(db: Session, jobset_id: int, definition_sbom):
+def create_evaluation(db: Session, jobset_id: int, git_revision: str, definition_sbom):
     """Create a new evaluation for a jobset"""
 
     evaluation = models.Evaluation(
         jobset_id=jobset_id,
+        git_revision=git_revision,
         definition_sbom=json.dumps(definition_sbom)
     )
     db.add(evaluation)
     db.commit()
     db.refresh(evaluation)
     return evaluation
+
+
+def get_evaluation_by_revision(db: Session, jobset_id: int, git_revision: str):
+    """Get an evaluation by jobset and git revision"""
+    return db.query(models.Evaluation).filter_by(
+        jobset_id=jobset_id,
+        git_revision=git_revision
+    ).one_or_none()
 
 def get_evaluation(db: Session, evaluation_id: int):
     return db.query(models.Evaluation).filter_by(id=evaluation_id).one_or_none()
@@ -137,12 +146,12 @@ def list_evaluations(db: Session, jobset_id: int = None):
     return query.order_by(models.Evaluation.uploaded_at.desc()).all()
 
 
-def add_evaluation_derivation(db: Session, evaluation_id: int, derivation_id: int):
-    """Link a derivation to an evaluation"""
-    eval_drv = models.EvaluationDerivation(
+def add_evaluation_output_path(db: Session, evaluation_id: int, output_path: str):
+    """Link an output path to an evaluation"""
+    eval_output = models.EvaluationOutputPath(
         evaluation_id=evaluation_id,
-        derivation_id=derivation_id,
+        output_path=output_path,
     )
-    db.add(eval_drv)
+    db.add(eval_output)
     db.commit()
-    return eval_drv
+    return eval_output

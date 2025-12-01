@@ -107,9 +107,13 @@ class Jobset(Base):
 
 class Evaluation(Base):
     __tablename__ = "evaluations"
+    __table_args__ = (
+        UniqueConstraint('jobset_id', 'git_revision', name='uq_evaluation_jobset_revision'),
+    )
 
     id: Mapped[int] = mapped_column(primary_key=True)
     jobset_id: Mapped[int] = mapped_column(ForeignKey("jobsets.id"), index=True)
+    git_revision: Mapped[str] = mapped_column(index=True)
 
     # Evaluation metadata
     uploaded_at: Mapped[datetime.datetime] = mapped_column(default=datetime.datetime.utcnow)
@@ -117,15 +121,14 @@ class Evaluation(Base):
 
     # Relationships
     jobset: Mapped["Jobset"] = relationship(back_populates="evaluations")
-    derivations: Mapped[List["EvaluationDerivation"]] = relationship(back_populates="evaluation")
+    output_paths: Mapped[List["EvaluationOutputPath"]] = relationship(back_populates="evaluation")
 
-class EvaluationDerivation(Base):
-    __tablename__ = "evaluation_derivations"
+class EvaluationOutputPath(Base):
+    __tablename__ = "evaluation_output_paths"
 
     id: Mapped[int] = mapped_column(primary_key=True)
     evaluation_id: Mapped[int] = mapped_column(ForeignKey("evaluations.id"), index=True)
-    derivation_id: Mapped[int] = mapped_column(ForeignKey("derivations.id"), index=True)
+    output_path: Mapped[str] = mapped_column(index=True)
 
     # Relationships
-    evaluation: Mapped["Evaluation"] = relationship(back_populates="derivations")
-    derivation: Mapped["Derivation"] = relationship()
+    evaluation: Mapped["Evaluation"] = relationship(back_populates="output_paths")

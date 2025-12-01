@@ -16,6 +16,7 @@
       <thead class="bg-gray-50">
         <tr>
           <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Eval #</th>
+          <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Revision</th>
           <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Jobset</th>
           <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Uploaded</th>
         </tr>
@@ -24,9 +25,12 @@
         {% for eval in evaluations %}
         <tr class="hover:bg-gray-50">
           <td class="px-6 py-4 whitespace-nowrap">
-            <a href="/evaluations/{{ eval.id }}" class="text-blue-600 hover:text-blue-800 font-medium">
+            <a href="/evaluations/{{ eval.jobset_id }}/{{ eval.git_revision }}" class="text-blue-600 hover:text-blue-800 font-medium">
               #{{ eval.id }}
             </a>
+          </td>
+          <td class="px-6 py-4 whitespace-nowrap">
+            <span class="text-sm text-gray-600 font-mono">{{ eval.git_revision[:12] }}</span>
           </td>
           <td class="px-6 py-4 whitespace-nowrap">
             <a href="/jobsets/{{ eval.jobset.id }}" class="text-blue-600 hover:text-blue-800">

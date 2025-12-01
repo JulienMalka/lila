@@ -2,6 +2,7 @@
 Jobset API routes
 """
 from fastapi import APIRouter, Depends, HTTPException
+from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
 from .. import crud, schemas
@@ -82,40 +83,44 @@ def delete_jobset(
     return {"message": "Jobset deleted"}
 
 
+class EvaluationUpload(BaseModel):
+    git_revision: str
+    definition: dict
+
+
 @router.put("/{jobset_id}/upload-evaluation", response_model=schemas.EvaluationResponse)
 def upload_evaluation(
     jobset_id: int,
-    definition: dict,
+    body: EvaluationUpload,
     user_id: int = Depends(get_user),
     db: Session = Depends(get_db),
 ):
     """Upload a new evaluation for a jobset"""
-    from .. import models
+    # Check if evaluation with this revision already exists
+    existing = crud.get_evaluation_by_revision(db, jobset_id, body.git_revision)
+    if existing:
+        raise HTTPException(
+            status_code=409,
+            detail=f"Evaluation with revision '{body.git_revision}' already exists for this jobset"
+        )
 
-    eval = crud.create_evaluation(db, jobset_id, definition)
-    # parse the sbom and populate derivation list
-    components = definition["components"]
+    eval = crud.create_evaluation(db, jobset_id, body.git_revision, body.definition)
+    # parse the sbom and populate output path list
+    components = body.definition["components"]
     for component in components:
-        drv_hash = None
+        out_path = None
         for prop in component["properties"]:
-            if prop["name"] == "nix:drv_path":
-                drv_hash = prop["value"].removeprefix("/nix/store/").removesuffix(".drv")
+            if prop["name"] == "nix:out_path":
+                out_path = prop["value"]
                 break
 
-        if drv_hash:
-            derivation = db.query(models.Derivation).filter_by(drv_hash=drv_hash).first()
-            if not derivation:
-                derivation = models.Derivation(drv_hash=drv_hash)
-                db.add(derivation)
-                db.commit()
-                db.refresh(derivation)
-
-            crud.add_evaluation_derivation(
+        if out_path:
+            crud.add_evaluation_output_path(
                 db,
                 evaluation_id=eval.id,
-                derivation_id=derivation.id,
+                output_path=out_path,
             )
-        
+
     return eval
 
 

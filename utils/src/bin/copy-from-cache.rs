@@ -60,7 +60,8 @@ async fn copy_all(client: &Client, cache_server: &str, evaluation: &str, collect
                 //match copy(client, cache_server, collection_server, token, &candidate.out_path, &candidate.drv_path.clone()).await {
                     Ok(()) =>
                         (),// Continue
-                    Err(_) => {
+                    Err(e) => {
+                        print!("Failed copying {}, skipping: {}", candidate.drv_path, e);
                         failed.insert(candidate.drv_path.clone());
                     },
                 };

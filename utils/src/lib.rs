@@ -177,9 +177,10 @@ pub async fn suggest(client: &Client, collection_server: &str, token: &str, eval
         .get(format!("{0}/api/evaluations/{1}/suggest", collection_server, evaluation_id))
         .bearer_auth(token)
         .send()
-        .await.expect("Fetching suggested rebuilds")
+        .await?
+        .error_for_status()?
         .json::<Vec<SuggestedRebuild>>()
-        .await.expect("Fetching the suggest responses");
+        .await?;
     Ok(suggestions)
 }
 

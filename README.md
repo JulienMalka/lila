@@ -84,7 +84,7 @@ $ DRV_PATH=$(nix-instantiate '<nixpkgs>' -A diffoscope)
 $ nix run git+https://codeberg.org/raboof/nix-build-sbom --no-write-lock-file -- $DRV_PATH --skip-without-deriver > build-closure-sbom.cdx.json
 $ export HASH_COLLECTION_TOKEN=XYX # your token
 $ JOBSET_ID=1 # replace with your jobset ID
-$ curl -X PUT "http://localhost:8000/api/jobsets/$JOBSET_ID/upload-evaluation" \
+$ curl -X PUT "http://localhost:8000/api/jobsets/$JOBSET_ID/upload-evaluation/$REV" \
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer $HASH_COLLECTION_TOKEN" \
   --data @build-closure-sbom.cdx.json
@@ -111,7 +111,7 @@ $ nix-store -q --tree $(nix-build '<nixpkgs>' -A diffoscope) > /tmp/tree.txt
 $ cat /tmp/tree.txt | nix run git+https://codeberg.org/raboof/nix-runtime-tree-to-sbom --no-write-lock-file -- --skip-without-deriver --include-drv-paths-from /tmp/build-closure-sbom.cdx.json > /tmp/sbom.cdx.json
 $ export HASH_COLLECTION_TOKEN=XYX # your token
 $ JOBSET_ID=1 # replace with your jobset ID
-$ curl -X PUT "http://localhost:8000/api/jobsets/$JOBSET_ID/upload-evaluation" \
+$ curl -X PUT "http://localhost:8000/api/jobsets/$JOBSET_ID/upload-evaluation/$REV" \
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer $HASH_COLLECTION_TOKEN" \
   --data @/tmp/sbom.cdx.json
@@ -124,16 +124,29 @@ ISO, they [no longer](https://github.com/NixOS/nixpkgs/pull/425700) show
 up as runtime dependencies. To get an evaluation for the derivations that go into
 a given installation ISO:
 
-Check out a 'clean' checkout of nixpkgs, notably not containing any files that would be ignored by git (you can check with `git status --ignored`) or empty directories (you can check with `find . -type d -empty`).
+Check out a 'clean' checkout of nixpkgs:
 
 ```
 $ cd /path/to/nixpkgs
+$ git status --ignored --short | tr -d \! | xargs rm
+$ find . -type d -empty -delete
+```
+
+Then:
+
+```
+$ REV=$(git log -1 --pretty=format:%h)
 $ DRV_PATH=$(nix-instantiate /path/to/lila/installation-iso-store-contents.nix --argstr nixpkgs-under-test $(pwd) --argstr version $(cat lib/.version) --argstr revCount $(git rev-list $(git log -1 --pretty=format:%h) | wc -l) --argstr shortRev $(git log -1 --pretty=format:%h) --argstr rev $(git rev-parse HEAD))
 $ nix run git+https://codeberg.org/raboof/nix-build-sbom --no-write-lock-file -- $DRV_PATH --skip-without-deriver --include-outputs all > /tmp/build-closure-sbom.cdx.json
 $ OUT_PATH=$(nix-build $DRV_PATH)
 $ nix-store -q --tree $OUT_PATH > /tmp/tree.txt
 $ cat /tmp/tree.txt | nix run git+https://codeberg.org/raboof/nix-runtime-tree-to-sbom --no-write-lock-file -- --skip-without-deriver --include-drv-paths-from /tmp/build-closure-sbom.cdx.json > /tmp/sbom.cdx.json
 $ export HASH_COLLECTION_TOKEN=XYX # your token
+$ export JOBSET_ID=XYX # the jobset this is part of
+$ curl -X PUT "http://localhost:8000/api/jobsets/$JOBSET_ID/upload-evaluation/$REV" \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer $HASH_COLLECTION_TOKEN" \
+  --data @/tmp/sbom.cdx.json
 ```
 
 #### Populating an evaluation

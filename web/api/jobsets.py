@@ -83,30 +83,26 @@ def delete_jobset(
     return {"message": "Jobset deleted"}
 
 
-class EvaluationUpload(BaseModel):
-    git_revision: str
-    definition: dict
-
-
-@router.put("/{jobset_id}/upload-evaluation", response_model=schemas.EvaluationResponse)
+@router.put("/{jobset_id}/upload-evaluation/{git_revision}", response_model=schemas.EvaluationResponse)
 def upload_evaluation(
     jobset_id: int,
-    body: EvaluationUpload,
+    git_revision: str,
+    body: dict,
     user_id: int = Depends(get_user),
     db: Session = Depends(get_db),
 ):
     """Upload a new evaluation for a jobset"""
     # Check if evaluation with this revision already exists
-    existing = crud.get_evaluation_by_revision(db, jobset_id, body.git_revision)
+    existing = crud.get_evaluation_by_revision(db, jobset_id, git_revision)
     if existing:
         raise HTTPException(
             status_code=409,
-            detail=f"Evaluation with revision '{body.git_revision}' already exists for this jobset"
+            detail=f"Evaluation with revision '{git_revision}' already exists for this jobset"
         )
 
-    eval = crud.create_evaluation(db, jobset_id, body.git_revision, body.definition)
+    eval = crud.create_evaluation(db, jobset_id, git_revision, body)
     # parse the sbom and populate output path list
-    components = body.definition["components"]
+    components = body["components"]
     for component in components:
         out_path = None
         for prop in component["properties"]:

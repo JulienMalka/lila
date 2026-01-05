@@ -5,20 +5,23 @@ use std::collections::HashSet;
 use std::env;
 use std::process::exit;
 
-async fn fetch<'a>(client: &'a Client, cache_url: &'a str, out_path: &'a str) -> OutputAttestation<'a> {
+async fn fetch<'a>(
+    client: &'a Client,
+    cache_url: &'a str,
+    out_path: &'a str,
+) -> Result<OutputAttestation<'a>> {
     let out_digest = parse_store_path_digest(out_path);
     let out_name = parse_store_path_name(out_path);
 
     let response = client
         .get(format!("{0}/{1}.narinfo", cache_url, out_digest))
         .send()
-        .await.expect("Fetching the narinfo")
+        .await
+        .expect("Fetching the narinfo")
+        .error_for_status()?
         .text()
-        .await.expect("Fetching the response body");
-
-    if response == "404" {
-        panic!("Metadata for [{0}] not found on cache.nixos.org", out_path);
-    }
+        .await
+        .expect("Fetching the response body");
 
     // Deriver is not always populated, for example not for
     // /nix/store/kbqscm1vj7yfvrnvdn1s9pvm0g5gpbaj-Test-Memory-Cycle-1.06.tar.gz
@@ -35,18 +38,18 @@ async fn fetch<'a>(client: &'a Client, cache_url: &'a str, out_path: &'a str) ->
         .expect(format!("Sig not found in metadata for [{0}]", out_path).as_str())
         .get(1).unwrap().as_str().to_owned();
 
-    OutputAttestation {
+    Ok(OutputAttestation {
         output_digest: &out_digest,
         output_name: &out_name,
         output_hash: nar_hash,
         output_sig: sig,
-    }
+    })
 }
 
 async fn copy(client: &Client, cache_server: &str, collection_server: &str, token: &str, out_path: &str, drv_hash: &str) -> Result<()> {
-        let output = fetch(&client, &cache_server, &out_path).await;
-        post(&client, &collection_server, &token, &drv_hash, &Vec::from([output])).await?;
-        Ok(())
+    let output = fetch(&client, &cache_server, &out_path).await?;
+    post(&client, &collection_server, &token, &drv_hash, &Vec::from([output])).await?;
+    Ok(())
 }
 
 async fn copy_all(client: &Client, cache_server: &str, evaluation: &str, collection_server: &str, token: &str) -> Result<()> {
@@ -61,7 +64,7 @@ async fn copy_all(client: &Client, cache_server: &str, evaluation: &str, collect
                     Ok(()) =>
                         (),// Continue
                     Err(e) => {
-                        print!("Failed copying {}, skipping: {}", candidate.drv_path, e);
+                        println!("Failed copying {}, skipping: {}", candidate.drv_path, e);
                         failed.insert(candidate.drv_path.clone());
                     },
                 };

@@ -159,9 +159,10 @@ sources.
 
 ```bash
 $ nix shell .#utils
+$ export HASH_COLLECTION_SERVER=XYX # your token for the cache.nixos.org import
 $ export HASH_COLLECTION_TOKEN=XYX # your token for the cache.nixos.org import
-$ EVALUATION_ID=123 # replace with your evaluation ID
-$ ./fetch-from-cache.sh $EVALUATION_ID
+$ export HASH_COLLECTION_EVALUATION=XXX
+$ copy-from-cache
 ```
 
 This script is still very much WIP, and will enter an infinite loop retrying failed fetches.

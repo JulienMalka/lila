@@ -122,3 +122,8 @@ code {
 .htmx-request.htmx-indicator {
   display: inline;
 }
+
+.text-xxs {
+  font-size: 0.50rem;
+  line-height: 0.75rem;
+}

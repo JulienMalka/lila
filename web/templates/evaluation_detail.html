@@ -84,7 +84,7 @@
   {% endif %}
 
   <!-- Output Paths List -->
-  <div class="bg-white rounded-lg shadow overflow-hidden">
+  <div class="bg-white rounded-lg shadow overflow-hidden mb-8">
     <div class="px-6 py-4 border-b border-gray-200">
       <h2 class="text-xl font-semibold text-gray-900">Output Paths</h2>
     </div>
@@ -202,6 +202,25 @@
       <p class="mt-1 text-sm text-gray-500">This evaluation has no output paths.</p>
     </div>
     {% endif %}
+  </div>
+  <div class="bg-white rounded-lg shadow">
+    <div class="px-6 py-4 border-b border-gray-200">
+      <h2 class="text-xl font-semibold text-gray-900">Contributing</h2>
+    </div>
+    <div class="px-6 py-4 border-b border-gray-200">
+      If you want to contribute rebuilds to this report, this is very welcome!
+      See the <a href="https://github.com/nix-community/lila">documentation</a>
+      to get a token en set up your system and then use the following parameters:
+      <pre class="mt-4 text-xxs">
+      nix shell github:nix-community/lila#utils
+      export MAX_CORES=8
+      export HASH_COLLECTION_TOKEN=XYX # your token
+      export HASH_COLLECTION_SERVER={{ host }}
+      export HASH_COLLECTION_EVALUATION={{ evaluation.id }}
+      {% if flake %}nix eval "{{ flake }}"{% endif %}
+      rebuilder
+      </pre>
+    </div>
   </div>
 </div>
 {% endblock %}

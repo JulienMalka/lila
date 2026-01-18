@@ -80,7 +80,7 @@ will be part of [#45](https://github.com/JulienMalka/lila/issues/45).
 
 ```bash
 $ nix shell github:nix-community/lila#utils
-$ export HASH_COLLECTION_TOKEN=XYX # your token for the cache.nixos.org import
+$ export HASH_COLLECTION_TOKEN=XYX # your token
 $ export HASH_COLLECTION_SERVER=http://localhost:8000
 $ export HASH_COLLECTION_EVALUATION=123 # evaluation ID
 $ export MAX_CORES=8

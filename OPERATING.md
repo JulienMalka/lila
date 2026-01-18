@@ -95,12 +95,13 @@ $ find . -type d -empty -delete
 Then:
 
 ```
-$ REV=$(git log -1 --pretty=format:%h)
-$ DRV_PATH=$(nix-instantiate /path/to/lila/installation-iso-store-contents.nix --argstr nixpkgs-under-test $(pwd) --argstr version $(cat lib/.version) --argstr revCount $(git rev-list $(git log -1 --pretty=format:%h) | wc -l) --argstr shortRev $(git log -1 --pretty=format:%h) --argstr rev $(git rev-parse HEAD))
+$ FLAKE="git+https://codeberg.org/raboof/nixos-iso-flake?rev=f74172f65b7c8b152e495eef0da6ab0d0e5f33a8#minimal-iso-runtime"
+$ DRV_PATH=/nix/store/$(nix derivation show "$FLAKE" | jq ".derivations | keys[0]" | tr -d '"')
+$ REV=$(echo $DRV_PATH | sed -e "s/.*\.\([a-z0-9]*\)-.*/\1/")
 $ nix run git+https://codeberg.org/raboof/nix-build-sbom --no-write-lock-file -- $DRV_PATH --skip-without-deriver --include-outputs all > /tmp/build-closure-sbom.cdx.json
 $ OUT_PATH=$(nix-build $DRV_PATH)
 $ nix-store -q --tree $OUT_PATH > /tmp/tree.txt
-$ cat /tmp/tree.txt | nix run git+https://codeberg.org/raboof/nix-runtime-tree-to-sbom --no-write-lock-file -- --skip-without-deriver --include-drv-paths-from /tmp/build-closure-sbom.cdx.json > /tmp/sbom.cdx.json
+$ cat /tmp/tree.txt | nix run git+https://codeberg.org/raboof/nix-runtime-tree-to-sbom --no-write-lock-file -- --skip-without-deriver --include-drv-paths-from /tmp/build-closure-sbom.cdx.json --flake $FLAKE > /tmp/sbom.cdx.json
 $ export HASH_COLLECTION_TOKEN=XYX # your token
 $ export JOBSET_ID=XYX # the jobset this is part of
 $ curl -X PUT "http://localhost:8000/api/jobsets/$JOBSET_ID/upload-evaluation/$REV" \

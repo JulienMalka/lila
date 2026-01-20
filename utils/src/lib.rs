@@ -190,7 +190,8 @@ pub async fn post(client: &Client, collection_server: &str, token: &str, drv_ide
         .bearer_auth(token)
         .json(&output_attestations)
         .send()
-        .await?;
+        .await?
+        .error_for_status()?;
     Ok(())
 }
 

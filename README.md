@@ -91,6 +91,10 @@ This will schedule `MAX_CORES` jobs in parallel, to keep the nix daemon
 queue saturated. It will not retry failures, and complete once it has
 attempted a rebuild for each package in the evaluation.
 
+### Troubleshooting
+
+check `journalctl -u async-nix-post-build-hook`
+
 ## Running your own lila server
 
 See [`DEPLOYING.md`](./DEPLOYING.md) and [`OPERATING.md`](./OPERATING.md)

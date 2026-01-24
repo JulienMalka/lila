@@ -20,7 +20,7 @@
       [
         "x86_64-linux"
         # https://github.com/NixOS/nix/issues/13045
-        #"aarch64-linux"
+        "aarch64-linux"
       ]
       (
         system:

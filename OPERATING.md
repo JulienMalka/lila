@@ -67,7 +67,7 @@ important to do 'actual' clean-room rebuilds to gain additional confidence.
 ```bash
 $ DRV_PATH=$(nix-instantiate '<nixpkgs>' -A diffoscope)
 $ nix run git+https://codeberg.org/raboof/nix-build-sbom --no-write-lock-file -- $DRV_PATH --skip-without-deriver --include-outputs all > /tmp/build-closure-sbom.cdx.json
-$ nix-store -q --tree $(nix-build '<nixpkgs>' -A diffoscope) > /tmp/tree.txt
+$ nix-store -q --tree $(nix-build $DRV_PATH) > /tmp/tree.txt
 $ cat /tmp/tree.txt | nix run git+https://codeberg.org/raboof/nix-runtime-tree-to-sbom --no-write-lock-file -- --skip-without-deriver --include-drv-paths-from /tmp/build-closure-sbom.cdx.json > /tmp/sbom.cdx.json
 $ export HASH_COLLECTION_TOKEN=XYX # your token
 $ JOBSET_ID=1 # replace with your jobset ID

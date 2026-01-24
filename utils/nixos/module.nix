@@ -65,7 +65,11 @@ with lib;
     queued-build-hook = {
       inherit (cfg) retries concurrency retryInterval;
       enable = true;
-      postBuildScript = "${utils}/bin/build-hook";
+      postBuildScript = pkgs.writeScriptBin "lila-post-build-hook" ''
+        #!/usr/bin/env sh
+        echo "Invoking lila build-hook:"
+        exec ${utils}/bin/build-hook
+      '';
       credentials = {
         HASH_COLLECTION_TOKEN = toString cfg.tokenFile;
         HASH_COLLECTION_SECRET_KEY = toString cfg.secretKeyFile;

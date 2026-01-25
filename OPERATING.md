@@ -13,7 +13,8 @@ This structure allows you to track reproducibility over time and compare differe
 
 ```bash
 $ export HASH_COLLECTION_TOKEN=XYX # your token
-$ curl -X POST "http://localhost:8000/api/jobsets" \
+$ export HASH_COLLECTION_SERVER=XYX
+$ curl -X POST "$HASH_COLLECTION_SERVER/api/jobsets" \
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer $HASH_COLLECTION_TOKEN" \
   -d '{
@@ -40,11 +41,14 @@ used during the 'check' phase.
 ##### Build-time closure evaluation
 
 ```bash
-$ DRV_PATH=$(nix-instantiate '<nixpkgs>' -A diffoscope)
-$ nix run git+https://codeberg.org/raboof/nix-build-sbom --no-write-lock-file -- $DRV_PATH --skip-without-deriver > build-closure-sbom.cdx.json
+$ FLAKE="git+https://codeberg.org/raboof/nixos-iso-flake?rev=cf844677e7a78b11a98fc4d90a6981eb387793b1#graphical-iso"
+$ DRV_PATH=/nix/store/$(nix derivation show "$FLAKE" | jq ".derivations | keys[0]" | tr -d '"')
+$ REV=$(echo $DRV_PATH | sed -e "s/.*\.\([a-z0-9]*\)-.*/\1/")
+$ nix run git+https://codeberg.org/raboof/nix-build-sbom --no-write-lock-file -- $DRV_PATH --skip-without-deriver --flake $FLAKE > build-closure-sbom.cdx.json
+$ export HASH_COLLECTION_SERVER=http://localhost:8000
 $ export HASH_COLLECTION_TOKEN=XYX # your token
 $ JOBSET_ID=1 # replace with your jobset ID
-$ curl -X PUT "http://localhost:8000/api/jobsets/$JOBSET_ID/upload-evaluation/$REV" \
+$ curl -X PUT "$HASH_COLLECTION_SERVER/api/jobsets/$JOBSET_ID/upload-evaluation/$REV" \
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer $HASH_COLLECTION_TOKEN" \
   --data @build-closure-sbom.cdx.json
@@ -69,9 +73,10 @@ $ DRV_PATH=$(nix-instantiate '<nixpkgs>' -A diffoscope)
 $ nix run git+https://codeberg.org/raboof/nix-build-sbom --no-write-lock-file -- $DRV_PATH --skip-without-deriver --include-outputs all > /tmp/build-closure-sbom.cdx.json
 $ nix-store -q --tree $(nix-build '<nixpkgs>' -A diffoscope) > /tmp/tree.txt
 $ cat /tmp/tree.txt | nix run git+https://codeberg.org/raboof/nix-runtime-tree-to-sbom --no-write-lock-file -- --skip-without-deriver --include-drv-paths-from /tmp/build-closure-sbom.cdx.json > /tmp/sbom.cdx.json
+$ export HASH_COLLECTION_SERVER=http://localhost:8000
 $ export HASH_COLLECTION_TOKEN=XYX # your token
 $ JOBSET_ID=1 # replace with your jobset ID
-$ curl -X PUT "http://localhost:8000/api/jobsets/$JOBSET_ID/upload-evaluation/$REV" \
+$ curl -X PUT "$HASH_COLLECTION_SERVER/api/jobsets/$JOBSET_ID/upload-evaluation/$REV" \
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer $HASH_COLLECTION_TOKEN" \
   --data @/tmp/sbom.cdx.json
@@ -82,17 +87,8 @@ $ curl -X PUT "http://localhost:8000/api/jobsets/$JOBSET_ID/upload-evaluation/$R
 Because the derivations that are part of the ISO are copied into the
 ISO, they [no longer](https://github.com/NixOS/nixpkgs/pull/425700) show
 up as runtime dependencies. To get an evaluation for the derivations that go into
-a given installation ISO:
-
-Check out a 'clean' checkout of nixpkgs:
-
-```
-$ cd /path/to/nixpkgs
-$ git status --ignored --short | tr -d \! | xargs rm
-$ find . -type d -empty -delete
-```
-
-Then:
+a given installation ISO, checkout/update https://codeberg.org/raboof/nixos-iso-flake
+and then:
 
 ```
 $ FLAKE="git+https://codeberg.org/raboof/nixos-iso-flake?rev=f74172f65b7c8b152e495eef0da6ab0d0e5f33a8#minimal-iso-runtime"
@@ -102,9 +98,10 @@ $ nix run git+https://codeberg.org/raboof/nix-build-sbom --no-write-lock-file --
 $ OUT_PATH=$(nix-build $DRV_PATH)
 $ nix-store -q --tree $OUT_PATH > /tmp/tree.txt
 $ cat /tmp/tree.txt | nix run git+https://codeberg.org/raboof/nix-runtime-tree-to-sbom --no-write-lock-file -- --skip-without-deriver --include-drv-paths-from /tmp/build-closure-sbom.cdx.json --flake $FLAKE > /tmp/sbom.cdx.json
+$ export HASH_COLLECTION_SERVER=http://localhost:8000
 $ export HASH_COLLECTION_TOKEN=XYX # your token
 $ export JOBSET_ID=XYX # the jobset this is part of
-$ curl -X PUT "http://localhost:8000/api/jobsets/$JOBSET_ID/upload-evaluation/$REV" \
+$ curl -X PUT "$HASH_COLLECTION_SERVER/api/jobsets/$JOBSET_ID/upload-evaluation/$REV" \
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer $HASH_COLLECTION_TOKEN" \
   --data @/tmp/sbom.cdx.json
@@ -120,7 +117,7 @@ sources.
 
 ```bash
 $ nix shell .#utils
-$ export HASH_COLLECTION_SERVER=XYX # your token for the cache.nixos.org import
+$ export HASH_COLLECTION_SERVER=http://localhost:8000
 $ export HASH_COLLECTION_TOKEN=XYX # your token for the cache.nixos.org import
 $ export HASH_COLLECTION_EVALUATION=XXX
 $ copy-from-cache
@@ -134,7 +131,8 @@ For rebuilder instructions see [`README.md`](./README.md)
 
 ```
 $ export HASH_COLLECTION_TOKEN=XYX # your token
-$ curl -X POST -G http://127.0.0.1:8000/api/link_patterns --data-urlencode 'pattern=samba.*' --data-urlencode 'link=https://github.com/NixOS/nixpkgs/issues/303436' -H "Authorization: Bearer $HASH_COLLECTION_TOKEN"
+$ export HASH_COLLECTION_SERVER=http://localhost:8000
+$ curl -X POST -G "$HASH_COLLECTION_SERVER/api/link_patterns" --data-urlencode 'pattern=samba.*' --data-urlencode 'link=https://github.com/NixOS/nixpkgs/issues/303436' -H "Authorization: Bearer $HASH_COLLECTION_TOKEN"
 ```
 
 

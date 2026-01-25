@@ -11,11 +11,6 @@ async fn main() -> Result<()> {
     let drv_path = read_env_var_or_panic("DRV_PATH");
     let drv_ident = parse_drv_hash(&drv_path);
 
-    println!(
-        "Uploading hashes of build outputs for derivation {0} to {1}",
-        drv_ident, collection_server
-    );
-
     let output_attestations: Vec<_> = out_paths
         .split(" ")
         .map(|path| -> OutputAttestation {
@@ -33,6 +28,11 @@ async fn main() -> Result<()> {
             }
         })
         .collect();
+
+    println!(
+        "Uploading hashes of build outputs for derivation {0} to {1} ({2})",
+        drv_ident, collection_server, output_attestations.len()
+    );
 
     let client = Client::builder()
         .user_agent("lila/1.0")

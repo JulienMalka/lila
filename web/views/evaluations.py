@@ -109,11 +109,24 @@ async def get_evaluation_detail(
             "drv_count": unique_drvs
         })
 
+    flake = None
+    if evaluation.definition_sbom:
+        sbom = json.loads(evaluation.definition_sbom)
+        if sbom['metadata'] and sbom['metadata']['component']:
+            for p in sbom['metadata']['component']['properties']:
+                if p['name'] == 'nix:flake':
+                    flake = p['value']
+
+    # TODO make configurable
+    host = "https://reproducibility.nixos.social"
+
     return templates.TemplateResponse("evaluation_detail.html", {
         "request": request,
         "evaluation": evaluation,
         "output_paths": output_path_stats,
-        "stats_summary": stats_summary
+        "stats_summary": stats_summary,
+        "host": host,
+        "flake": flake,
     })
 
 

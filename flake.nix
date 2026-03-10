@@ -75,7 +75,10 @@
       )
     )
     // {
-      nixosModules.hash-collection = import ./utils/nixos/module.nix queued-build-hook.nixosModules.queued-build-hook;
+      nixosModules.hash-collection = import ./utils/nixos/module.nix {
+        inherit queued-build-hook;
+        utils = nixpkgs.legacyPackages.x86_64-linux.callPackage ./utils { };
+      };
       nixosModules.hash-collection-server = import ./web/nixos/module.nix;
     };
 }

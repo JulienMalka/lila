@@ -1,8 +1,8 @@
-queued-build-hook-module:
+{ queued-build-hook, utils }:
 { config, lib, pkgs, ... }:
 let
   cfg = config.services.hash-collection;
-  utils = pkgs.callPackage ../. { };
+  queued-build-hook-module = queued-build-hook.nixosModules.queued-build-hook;
 in
 with lib;
 {
